@@ -3,13 +3,13 @@ name: handdrawn-explainer-video
   
 description: "把任意主题制作成 3 分钟以内的手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染成 1080p MP4，无配音）。当用户要求'做个教学视频/科普短片/手绘动画视频/讲解视频'，或给出一个主题、文章链接希望生成讲解视频时使用。关键词：教学视频、科普视频、手绘动画、科普短片、Canvas 动画、讲解视频"
   
-version: "1.3.0"
+version: "1.3.1"
   
 author: "CodeBuddy AI"
   
 created: "2026-10-10"
   
-changelog: "1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
+changelog: "1.3.1 阶段 3 字体引入支持 junction 零复制共享（Windows 推荐）或 copy 自包含二选一；技术备忘补充 rationale 与实测结论。 1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
 ---
 
 # 手绘卡通教学视频生成器
@@ -62,7 +62,7 @@ git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
 ├── 视频分镜脚本.md             # 阶段 2 产出
 ├── video.html                  # 动画工程（互动预览版）
 ├── scenes.js / framework.js / handdrawn.js
-├── assets/fonts/*.ttf          # 从 skill 复制的字体
+├── assets/fonts/*.ttf          # 手写字体（真实 copy 或指向 <skill>/assets 的 junction）
 ├── testframes/                 # 阶段 4 自检测试帧（交付后可删）
 ├── frames/                     # 阶段 5 全量帧（体积大，合成后可删）
 └── <片名>.mp4                  # 阶段 5 成片
@@ -162,8 +162,12 @@ git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
 # <主题文件夹> = <项目根>/<主题名>，已在上一步创建
 cd <主题文件夹>
 cp <skill>/templates/handdrawn.js <skill>/templates/framework.js <skill>/templates/video.html .
-cp -r <skill>/assets .                # 三款手写字体（必须，防豆腐块）
 cp <skill>/templates/scenes_example.js scenes.js   # 作为改写起点
+# 三款手写字体（必须，防豆腐块），两种方式二选一：
+#   方式 A · Windows（推荐）：junction 零复制，磁盘只存一份
+#     cmd //c "mklink /J assets <skill>/assets"    # Git Bash 语法；PowerShell 用 New-Item -ItemType Junction
+#   方式 B · 任意平台：直接 copy（工程自包含，可整体拷走）
+#     cp -r <skill>/assets .
 ```
 
 **然后重写 scenes.js 中的场景函数**（scenes_example.js 是完整参考实现，含 tile/dashLine/stamp 等辅助函数）。改动点只有三个：
@@ -232,7 +236,7 @@ ffmpeg -y -i "./<片名>.mp4" -vf "select='eq(n\,200)+eq(n\,1500)+eq(n\,3900)'" 
 
 1. **场景时间轴**：`draw()` 传的是全局 t，场景函数里别再用 `t - scene.start`。
 2. **libx264 可能不存在**：encode.sh 已内置 fallback 链，直接用。
-3. **字体必须本地化**：Google Fonts CDN 在无头浏览器逐帧截图时可能加载不完整；用 `@font-face` 本地 ttf + `document.fonts.load()` 显式等待。
+3. **字体必须本地可加载**：Google Fonts CDN 在无头浏览器逐帧截图时可能加载不完整；用 `@font-face` 本地 ttf + `document.fonts.load()` 显式等待。字体文件可 copy 进主题文件夹（自包含），Windows 下也可对 `<skill>/assets` 建 NTFS junction 零复制共享（实测 file:// 渲染正常；junction 方案下工程依赖 skill 安装路径存在，拷给他人时需还原为真实 copy）。
 4. **圆角矩形路径**：`buildRoundRectPts` 的四角弧必须连续顺时针（库内已修正，不要改回旧写法），否则卡片呈"旗帜状"。
 5. **非拉丁文字渲染风险**：生僻文字（缅文、稀有符号）在精简 Linux 字体环境下会变豆腐块，改用中文标签描述。
 6. **渲染性能**：约 24 帧/秒（1080p），170s 视频 ≈ 3 分钟渲染；超长任务用 run_in_background。
