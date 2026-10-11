@@ -16,6 +16,7 @@
 - 🔇 **无配音**：全部信息靠画面与字幕传达，静音也好看
 - 🧒 **零门槛**：类比优先 + 大数字 + 每屏一句话，初中生也能看懂
 - 🪝 **钩子开场**：认知冲突式开头，让人想看下去
+- 🔎 **三层溯源**：research/ 原始来源留痕 → 调研材料（数据点附引用链接）→ 成片，每个数字都能回溯到出处
 
 ## 📦 结构
 
@@ -57,6 +58,16 @@ git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
 ## 🚀 快速开始
 
 **约定：每部视频的全部产物（调研/分镜/工程/帧/成片）统一放在项目根下一个以主题命名的文件夹**，如 `my-video/`。
+
+```
+my-video/
+├── 调研材料.md          # 提炼稿：核心问题/数据点/金句，数据点附 research/ 引用链接
+├── research/            # 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录；仅本地，不随项目分发）
+├── 视频分镜脚本.md
+├── video.html / scenes.js / framework.js / handdrawn.js
+├── frames/  testframes/ # 渲染中间产物，交付后可删
+└── my-video.mp4         # 成片
+```
 
 ```bash
 # 1. 搭工程（在主题文件夹内）
