@@ -33,19 +33,21 @@ handdrawn-explainer-video/
 
 ## 🚀 快速开始
 
+**约定：每部视频的全部产物（调研/分镜/工程/帧/成片）统一放在项目根下一个以主题命名的文件夹**，如 `my-video/`。
+
 ```bash
-# 1. 搭工程
-cp -r templates/*.js templates/video.html my-video/
-cp -r assets my-video/assets
-cp templates/scenes_example.js my-video/scenes.js
+# 1. 搭工程（在主题文件夹内）
+mkdir my-video && cd my-video
+cp <skill>/templates/handdrawn.js <skill>/templates/framework.js <skill>/templates/video.html .
+cp -r <skill>/assets .
+cp <skill>/templates/scenes_example.js scenes.js
 
-# 2. 自检关键帧
-cd my-video && npm i playwright-core
-node <skill>/scripts/render.js ./video.html ./tf --test "3,8,24,58"
+# 2. 自检关键帧（产物落 ./testframes/）
+node <skill>/scripts/render.js ./video.html ./testframes --test "3,8,24,58"
 
-# 3. 全量渲染 + 合成
+# 3. 全量渲染 + 合成（成片落主题文件夹内）
 node <skill>/scripts/render.js ./video.html ./frames --fps 24 --dur 170
-bash <skill>/scripts/encode.sh ./frames 24 out.mp4 4.5M
+bash <skill>/scripts/encode.sh ./frames 24 ./my-video.mp4 4.5M
 ```
 
 详细制作规范（叙事骨架、钩子公式、场景模式库、踩坑备忘）见 [SKILL.md](SKILL.md)。

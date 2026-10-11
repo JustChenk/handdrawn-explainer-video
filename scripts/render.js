@@ -27,27 +27,57 @@ if (!HTML || !OUT_DIR) {
   process.exit(1);
 }
 
-/* 自动探测 Chromium 可执行文件 */
+/* 自动探测 Chromium 可执行文件（Windows + Linux） */
 function findChrome() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
-  const base = path.join(process.env.HOME || '/root', '.cache/ms-playwright');
+  const home = process.env.HOME || process.env.USERPROFILE || '/root';
   const candidates = [];
-  if (fs.existsSync(base)) {
+  // Playwright 缓存（Linux: ~/.cache/ms-playwright；Windows: %LOCALAPPDATA%\ms-playwright）
+  const pwBases = [path.join(home, '.cache/ms-playwright')];
+  if (process.env.LOCALAPPDATA) pwBases.push(path.join(process.env.LOCALAPPDATA, 'ms-playwright'));
+  for (const base of pwBases) {
+    if (!fs.existsSync(base)) continue;
     for (const d of fs.readdirSync(base)) {
       candidates.push(path.join(base, d, 'chrome-linux64', 'chrome'));
       candidates.push(path.join(base, d, 'chrome-linux', 'chrome'));
       candidates.push(path.join(base, d, 'chrome-headless-shell-linux64', 'chrome-headless-shell'));
+      candidates.push(path.join(base, d, 'chrome-win64', 'chrome.exe'));
+      candidates.push(path.join(base, d, 'chrome-win', 'chrome.exe'));
     }
   }
+  // Puppeteer 缓存（Windows: ~\.cache\puppeteer\chrome\<ver>\chrome-win64\chrome.exe）
+  const ppBase = path.join(home, '.cache', 'puppeteer', 'chrome');
+  if (fs.existsSync(ppBase)) {
+    for (const d of fs.readdirSync(ppBase)) {
+      candidates.push(path.join(ppBase, d, 'chrome-win64', 'chrome.exe'));
+      candidates.push(path.join(ppBase, d, 'chrome-win', 'chrome.exe'));
+      candidates.push(path.join(ppBase, d, 'chrome-linux64', 'chrome'));
+    }
+  }
+  // Windows 系统 Chrome / Edge
+  if (process.env.ProgramFiles) {
+    candidates.push(path.join(process.env.ProgramFiles, 'Google/Chrome/Application/chrome.exe'));
+    candidates.push(path.join(process.env.ProgramFiles, 'Microsoft/Edge/Application/msedge.exe'));
+  }
+  if (process.env['ProgramFiles(x86)']) {
+    candidates.push(path.join(process.env['ProgramFiles(x86)'], 'Google/Chrome/Application/chrome.exe'));
+    candidates.push(path.join(process.env['ProgramFiles(x86)'], 'Microsoft/Edge/Application/msedge.exe'));
+  }
+  // Linux 系统浏览器
   candidates.push('/usr/bin/chromium', '/usr/bin/google-chrome');
   for (const c of candidates) if (fs.existsSync(c)) return c;
   return null;
 }
 
-/* 多路径加载 playwright-core：本地 node_modules → 全局 → 提示安装 */
+/* 多路径加载 playwright-core：本地 node_modules → 托管工作区 → 全局 → 提示安装 */
 function loadPlaywright() {
   const tries = [];
   try { return require('playwright-core'); } catch (e) { tries.push('local'); }
+  try {
+    // WorkBuddy 托管 node 工作区（Windows 下本地 node_modules 常不存在）
+    const home = process.env.USERPROFILE || process.env.HOME;
+    return require(path.join(home, '.workbuddy', 'binaries', 'node', 'workspace', 'node_modules', 'playwright-core'));
+  } catch (e) { tries.push('workbuddy-workspace'); }
   try {
     const { execSync } = require('child_process');
     const g = execSync('npm root -g').toString().trim();
