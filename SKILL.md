@@ -1,15 +1,52 @@
 ---
-name: handdrawn-explainer-video  
-description: "把任意主题制作成 3 分钟以内的手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染成 1080p MP4，无配音）。当用户要求'做个教学视频/科普短片/手绘动画视频/讲解视频'，或给出一个主题、文章链接希望生成讲解视频时使用。关键词：教学视频、科普视频、手绘动画、科普短片、Canvas 动画、讲解视频"  
-version: "1.1.0"  
-author: "CodeBuddy AI"  
-created: "2026-10-10"  
-changelog: "1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
+name: handdrawn-explainer-video
+  
+description: "把任意主题制作成 3 分钟以内的手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染成 1080p MP4，无配音）。当用户要求'做个教学视频/科普短片/手绘动画视频/讲解视频'，或给出一个主题、文章链接希望生成讲解视频时使用。关键词：教学视频、科普视频、手绘动画、科普短片、Canvas 动画、讲解视频"
+  
+version: "1.2.0"
+  
+author: "CodeBuddy AI"
+  
+created: "2026-10-10"
+  
+changelog: "1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
 ---
 
 # 手绘卡通教学视频生成器
 
 > **Goal**：用户给一个主题（可附链接/材料），产出一部 **≤3 分钟、无配音、手绘卡通风格、初中生能看懂、开头有钩子** 的 1080p 科普教学短片 MP4，以及配套的调研材料与分镜脚本。
+
+## 安装（Installation）
+
+本仓库是一个标准的 **Agent Skill 包**（`SKILL.md` 清单 + 模板/脚本/字体等资源文件），任何支持 Agent Skill 机制的 AI 编程助手都能加载它。安装方法 = **把仓库放进对应工具的 skill 加载目录**。下面以 CodeBuddy 为例：
+
+**方式 A · 用户级安装（对所有项目生效，推荐）**
+
+```bash
+git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
+  ~/.codebuddy/skills/handdrawn-explainer-video
+```
+
+**方式 B · 项目级安装（仅当前项目生效）**
+
+```bash
+cd <你的项目根目录>
+git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
+  .codebuddy/skills/handdrawn-explainer-video
+```
+
+其他支持 Agent Skill 规范的工具安装方法完全相同，只是目录不同——把上面命令里的 `~/.codebuddy/skills/`（或 `.codebuddy/skills/`）换成所用工具的 skill 目录即可（例如 `~/.claude/skills/`、`~/.opencode/skills/` 等，以各自文档为准）。
+
+安装后新开会话即可被自动发现（Skill 名称：`handdrawn-explainer-video`）。用户说"做个教学视频 / 科普短片 / 手绘动画视频"并给出主题时即触发。
+
+**运行时依赖（首次使用前装一次）**
+
+| 依赖 | 安装 | 用途 |
+|---|---|---|
+| playwright-core | `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i -g playwright-core` | 逐帧渲染（不会下载浏览器） |
+| Chromium / Chrome | 本机已有即可；无则设 `CHROME_PATH` 指向可执行文件 | 渲染引擎（render.js 自动探测） |
+| ffmpeg | `apt install ffmpeg` 或官网安装 | 帧序列合成 MP4（编码器自动 fallback） |
+| Node.js ≥ 18 | 官网安装 | 运行 render.js |
 
 ## 产物目录约定（先读，全流程遵守）
 
