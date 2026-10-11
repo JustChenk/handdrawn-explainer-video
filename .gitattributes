@@ -1,0 +1,31 @@
+# 本仓库的行尾规则（.gitattributes 优先级高于各机器的 core.autocrlf）
+# 目的：仓库内统一存 LF，避免 Windows / Linux 来回提交时行尾反复翻转。
+# 说明：同规则也已写入全局 C:\Users\yangck\.gitattributes（对所有仓库生效），
+#       这里再放一份是为了让别人 clone 后行为一致。
+
+# 文本文件：仓库内统一 LF，检出时用各平台原生行尾
+* text=auto
+
+# 二进制：显式声明，避免被当成文本"修复"而损坏
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.ttf   binary
+*.woff  binary
+*.woff2 binary
+*.mp4   binary
+*.exe   binary
+
+# Shell 脚本必须 LF；Windows 批处理必须 CRLF
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Git 自身文件用 LF
+.gitattributes text eol=lf
+.gitignore     text eol=lf

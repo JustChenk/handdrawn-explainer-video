@@ -6,6 +6,20 @@
      framework.js 中 SCENES 数组的 start/dur 保持一致。
    ★ 辅助小函数（tile/dashLine/stamp/brick/drawFish...）也在这里，
      新视频可复用或增删。
+
+   ★★ 写字前先看这一条：参数错位是本库最高频 bug ★★
+     JS 不报错，症状只有两个，且都很像"设计效果"：
+       ① 该显示的文字静默消失   ② 画面上凭空多出一个数字（seed/size 被当文字画了）
+     成因：调用时少传/错传了中间参数，后面每个实参整体前移。
+     三个已知踩坑点：
+       handText(ctx, txt, x, y, size, o)          ← 第2个是文本，x/y 是锚点
+       banner(ctx, y, txt, t, a, b, seed, o)      ← ★没有 x 参数！
+       badge(ctx, x, y, s, txt, seed, o)          ← 第4个是缩放 s，第5个才是文本
+     自定义 helper 请统一按 (ctx, x, y, [数值...], txt, seed, o={}) 排序；
+     在 translate/scale 之后绘制的元素，传给 handText 的用【局部坐标】。
+     完整签名表见 handdrawn.js 顶部。
+   ★★ 写完场景后必须跑：node <skill>/scripts/precheck.js scenes.js handdrawn.js framework.js
+      它会自动校验所有调用点的参数个数与位置类型，退出码 0 才进入渲染。
    ========================================================= */
 
 

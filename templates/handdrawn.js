@@ -2,6 +2,55 @@
 /* =========================================================
    handdrawn.js —— 手绘卡通风格 Canvas 工具库（确定性渲染）
    所有随机均由 seed 驱动；boil（手绘抖动）每秒 8 次换 seed
+
+   ---------------------------------------------------------
+   ★ 调用前必读：API 签名速查表（参数错位是本库最高频 bug）
+   ---------------------------------------------------------
+   这些函数参数多、且大量参数带默认值，少传/错位时 JS 不会报错，
+   只会表现为"文字静默消失"或"画面上凭空多出一个数字"，极易误判成设计效果。
+
+   通用约定：文本参数紧跟在数值参数之后、seed 之前：
+             (ctx, x, y, [数值参数...], txt, seed, o={})
+           在 ctx.translate/scale 之后绘制的元素，传给 handText 的
+           必须是【局部坐标】（如 0,2 / 10,2），不是页面绝对坐标。
+
+   handText      (ctx, txt, x, y, size, o)              第2个是文本内容
+   handLines     (ctx, lines, x, y, size, gap, o)
+   typeText      (ctx, full, x, y, size, o, cps, t0, t)
+   chapterTitle  (ctx, txt, t, a, b, seed, sub)         第3个是全局时间 t
+   banner        (ctx, y, txt, t, a, b, seed, o)        ★没有 x 参数！
+   bubble        (ctx, x, y, w, h, seed, o)
+   sticky        (ctx, x, y, w, h, seed, o)             文本走 o.label
+   tokenCard     (ctx, x, y, w, h, o)                   文本走 o.label/num/sub
+   jline         (ctx, x1, y1, x2, y2, seed, o)
+   jcircle       (ctx, cx, cy, r, seed, o)
+   jcircleFill   (ctx, cx, cy, r, seed, o)
+   jarc          (ctx, cx, cy, r, seed, a0, a1, o)
+   jrr           (ctx, x, y, w, h, rad, seed, o)
+   jdot          (ctx, x, y, r, color, alpha)           color 是位置参数
+   strokePts     (ctx, pts, o)
+   fillPts       (ctx, pts, o)
+   fillStrokePts (ctx, pts, o)
+   drawArrow     (ctx, x1, y1, x2, y2, seed, o)
+   drawCheck     (ctx, x, y, s, seed, color, progress, width)
+   drawCross     (ctx, x, y, s, seed, color, progress, width)
+   drawHuman     (ctx, x, y, s, seed, o)
+   drawRobot     (ctx, x, y, s, seed, o)
+   drawBurst     (ctx, x, y, s, seed, color, alpha)
+   drawStar5     (ctx, x, y, r, seed, o)
+   circled       (ctx, cx, cy, rx, ry, seed, o)
+   drawMachine   (ctx, x, y, s, t, seed, o)
+   buildLinePts  (x1, y1, x2, y2, seed, amp, n)          ★纯几何构造器，不接 ctx
+   buildArcPts   (cx, cy, rx, ry, seed, amp, n, a0, a1)  ★不接 ctx
+   buildRoundRectPts (x, y, w, h, rad, seed, amp, n)     ★不接 ctx
+   buildPolyPts  (corners, seed, amp, per)               ★不接 ctx
+   cutPts        (pts, progress)
+   easeOutCubic / easeOutBack / easeInCubic / easeInOutCubic / seg / lerp / clamp01
+
+   ---------------------------------------------------------
+   写完调用点后务必执行（自动校验上表所有函数的参数个数与位置类型）：
+     node <skill>/scripts/precheck.js scenes.js handdrawn.js framework.js
+   排查单个函数：命令末尾加  --dump <函数名>  可打印逐参数的绑定结果
    ========================================================= */
 
 const TAU = Math.PI * 2;

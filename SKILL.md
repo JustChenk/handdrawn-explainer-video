@@ -3,13 +3,13 @@ name: handdrawn-explainer-video
   
 description: "把任意主题制作成 3 分钟以内的手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染成 1080p MP4，无配音）。当用户要求'做个教学视频/科普短片/手绘动画视频/讲解视频'，或给出一个主题、文章链接希望生成讲解视频时使用。关键词：教学视频、科普视频、手绘动画、科普短片、Canvas 动画、讲解视频"
   
-version: "1.3.1"
+version: "1.4.0"
   
 author: "CodeBuddy AI"
   
 created: "2026-10-10"
   
-changelog: "1.3.1 阶段 3 字体引入支持 junction 零复制共享（Windows 推荐）或 copy 自包含二选一；技术备忘补充 rationale 与实测结论。 1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
+changelog: "1.4.0 新增 scripts/precheck.js 渲染前静态自检（用函数真实签名校验所有调用点，专治参数错位/漏参/时间基准错误，--dump 可打印参数绑定）；阶段 4 强制先跑 precheck；阶段 3 增加『API 签名速查表』与签名纪律；技术备忘新增第 7 条（参数错位类 bug 的成因与防护）。 1.3.1 阶段 3 字体引入支持 junction 零复制共享（Windows 推荐）或 copy 自包含二选一；技术备忘补充 rationale 与实测结论。 1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
 ---
 
 # 手绘卡通教学视频生成器
@@ -178,11 +178,31 @@ cp <skill>/templates/scenes_example.js scenes.js   # 作为改写起点
 
 **关键约定（违反会出 bug）**：
 
+- **调用任何绘制函数前先核对签名**（见下方速查表 / `handdrawn.js` 顶部签名表）。这些函数参数多、且不少参数带默认值，**少传或错位时 JS 不报错**，只会表现为"文字不见了"或"画面上凭空多了个数字"。这是本库最高频的 bug，写完必须跑阶段 4 的 `precheck.js`。
 - 场景函数接收**全局时间 t**，内部所有 `seg(t, a, b)` 的时间点与 SCENES 的 start/dur 一致——不要把场景起始时间当成 0
 - 所有随机效果经 `seed` 参数驱动（保证同一帧可复现，逐帧录制不闪烁）；新元素出现时配合 `easeOutBack(seg(...))` 弹跳
 - 元素层级顺序：背景 → 场景 → wipe 转场 → 进度条（框架已处理）
 - 字体：`ZCOOL KuaiLe`（中文正文）、`Patrick Hand`（英文/数字）、`Caveat`（英文标题），`handText` 内部已对 null 的 color/font 做了兜底
 - 构图安全区：x∈[80,1840], y∈[70,1000]（底部 1050 是进度条）；一屏信息量宁可拆两幕不要硬塞
+- **在 ctx 已被 translate/scale 的局部坐标系里绘制的元素（价签、徽章、卡片内部文字），传给 handText 的应是【局部坐标】（如 `0,2` / `10,2`），不要传页面绝对坐标**，否则文字会跑到画面外
+
+**API 签名速查表（易错项，完整表见 `handdrawn.js` 顶部注释）**：
+
+| 函数 | 签名 | 易错点 |
+|---|---|---|
+| `handText` | `(ctx, txt, x, y, size, o)` | 第 2 个是**文本**；x/y 是文本锚点，不是内容 |
+| `priceTag`* | `(ctx, x, y, txt, seed, o)` | 项目自定义；内部用局部坐标画字 |
+| `badge`* | `(ctx, x, y, s, txt, seed, o)` | **第 4 个是缩放 s**，第 5 个才是文本！漏了 s 就会把 seed 画成数字 |
+| `chapterTitle` | `(ctx, txt, t, a, b, seed, sub)` | 第 3 个是**全局时间 t**；`sub` 可传字符串或 `{sub:'..'}` |
+| `banner` | `(ctx, y, txt, t, a, b, seed, o)` | **没有 x 参数**！多传一个 x 会让所有参数整体错位 |
+| `sticky` | `(ctx, x, y, w, h, seed, o)` | 文本走 `o.label`，不是位置参数 |
+| `tokenCard` | `(ctx, x, y, w, h, o)` | 文本走 `o.label` / `o.num` / `o.sub` |
+| `jdot` | `(ctx, x, y, r, color, alpha)` | color 是位置参数，不是 o.color |
+| `drawMug`* | `(ctx, x, y, s, seed, o)` | 文本走 `o.label` |
+
+> `*` 标记的是**项目自定义辅助函数**（不在库里，需自己写）。`precheck.js` 会把它们一并纳入校验，所以自定义 helper 也要保持"文本靠前、数值靠后、文本配数值位"的签名习惯。
+
+**书写习惯（能天然避免错位）**：把 helper 的签名统一成 `(ctx, x, y, [数值参数...], txt, seed, o={})`，即**文本永远紧跟数值之后、seed 之前**；调用点写完后立刻跑 `precheck.js`。
 
 **视觉风格参数**（handdrawn.js 已内置，直接用）：
 
@@ -200,8 +220,33 @@ cp <skill>/templates/scenes_example.js scenes.js   # 作为改写起点
 
 ### 阶段 4 · 自检（不可跳过）
 
+**第 1 步（必做）：静态自检 —— 渲染之前先跑，能省掉一整轮返工**
+
 ```bash
-cd <主题文件夹>   # 首次: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i playwright-core
+cd <主题文件夹>
+node <skill>/scripts/precheck.js scenes.js handdrawn.js framework.js
+# 退出码 0 才继续；报 ERROR 必须先修，否则错误会以
+# "画面上凭空多个数字 / 某段文字消失"的形式混进成片，肉眼极易误判成设计元素
+```
+
+`precheck.js` 检查四件事（用**函数真实签名**校验，不硬编码）：
+
+1. **参数错位**：数值位传了字符串（如漏传 `badge` 的 `s`，`'卖方'` 落到缩放位）、文本位传了数字（seed 被画成文字）——**这一类就是历史高频 bug**
+2. **参数个数**：少于必填参数个数
+3. `SCENES` 时间轴连续性、`sceneN` 是否都有定义、总时长是否 ≤180s
+4. **时间基准**：场景函数是否误用了幕内相对时间（该幕会整段空白）
+
+排查单个函数时用 `--dump` 看参数绑定：
+
+```bash
+node <skill>/scripts/precheck.js scenes.js handdrawn.js framework.js --dump badge
+# 打印每个 badge() 调用点，逐参数显示"形参名 <= 实参"
+```
+
+**第 2 步：渲染测试帧并逐张 Read**
+
+```bash
+cd <主题文件夹>   # 首次需先安装渲染依赖：PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i playwright-core
 node <skill>/scripts/render.js ./video.html ./testframes --test "3,8,24,58,80,110,130,150,166"
 # 测试帧落在 <主题文件夹>/testframes/，Read 逐张检查
 ```
@@ -209,12 +254,14 @@ node <skill>/scripts/render.js ./video.html ./testframes --test "3,8,24,58,80,11
 **逐张 Read 检查每张测试帧**，检查清单：
 
 - [ ] 文字无重叠、无被遮挡、无超出卡片/屏幕边界
+- [ ] **画面上没有"看不懂的数字/字母"**——凡是无法解释其含义的数字（如凭空出现的 `304`），一律当 bug 追查，不要当成设计元素
+- [ ] **每个本该有文字的元素都真的有字**：徽章、价签、卡片、贴纸逐个确认（文字消失也是错位的一种表现，比多出数字更难发现）
 - [ ] 无字体豆腐块（□）—— 出现则检查 assets/fonts 是否就位、生僻字符（如缅文）换中文描述
 - [ ] 每个场景的关键时间点都有内容（无意外空白帧）
 - [ ] 错别字、数字与调研材料一致
 - [ ] 场景切换前后 1s 内画面不穿帮
 
-发现问题改代码后**重渲对应时间点再验**，直到全部通过。
+发现问题改代码后**先重跑 `precheck.js`，再重渲对应时间点验收**，直到全部通过。
 
 ### 阶段 5 · 全量渲染与合成
 
@@ -240,9 +287,25 @@ ffmpeg -y -i "./<片名>.mp4" -vf "select='eq(n\,200)+eq(n\,1500)+eq(n\,3900)'" 
 4. **圆角矩形路径**：`buildRoundRectPts` 的四角弧必须连续顺时针（库内已修正，不要改回旧写法），否则卡片呈"旗帜状"。
 5. **非拉丁文字渲染风险**：生僻文字（缅文、稀有符号）在精简 Linux 字体环境下会变豆腐块，改用中文标签描述。
 6. **渲染性能**：约 24 帧/秒（1080p），170s 视频 ≈ 3 分钟渲染；超长任务用 run_in_background。
+7. **参数错位（本库最高频 bug，务必理解机理）**：库函数参数多、且大量参数带默认值，例如
+   - `handText(ctx, txt, x, y, size, o)`
+   - `banner(ctx, y, txt, t, a, b, seed, o)` ← **没有 x**
+   - `badge(ctx, x, y, s, txt, seed, o)` ← 第 4 个是缩放 `s`，第 5 个才是文本
+
+   凭直觉调用时极易"少传中间一个参数"，此时 **JS 不抛错**：后面每个实参整体前移，于是
+   ① 本该显示的文字落进数值位 → 文字静默消失（看起来像"这个元素没设计文字"）；
+   ② 本该是 seed/size 的数字落进文本位 → **画面上凭空多出一个数字**（如 `304`）。
+   两个症状都很容易被误判成设计效果而放过，因此：
+   - 动手写调用点前先查 `handdrawn.js` 顶部签名表与 SKILL 的《API 签名速查表》；
+   - 写完立刻跑 `node <skill>/scripts/precheck.js`（会校验调用点参数个数与位置类型，并覆盖项目自定义 helper）；
+   - 自检阶段看到任何"无法解释含义的数字"，一律按 bug 追查，可用 `--dump <函数名>` 看参数绑定；
+   - 自定义 helper 统一按 `(ctx, x, y, [数值...], txt, seed, o={})` 的次序写，文本紧跟数值、始终在 seed 之前。
+8. **局部坐标 vs 绝对坐标**：凡在 `ctx.translate/scale` 之后绘制的元素（价签、徽章、卡片内文字），传给 `handText` 的必须是**局部坐标**（`0,2`、`10,2` 这类）。混用绝对坐标会让文字跑到画面外或压在别的元素上。
 
 ## 验收清单（交付前逐项过）
 
+- [ ] **`node <skill>/scripts/precheck.js scenes.js handdrawn.js framework.js` 退出码为 0**（无参数错位/无时间轴断裂/无空白幕）
+- [ ] 测试帧逐张 Read 过，且**画面上的每个数字都能说清含义**、每个该有文字的元素都真的有字
 - [ ] 时长 ≤ 180s，24fps，1920×1080，H.264，yuv420p，faststart
 - [ ] 无任何音轨
 - [ ] 第 1 幕 15s 内有明确钩子
