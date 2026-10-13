@@ -18,7 +18,7 @@ agent_created: true
 |---|---|---|
 | ① 拆集 | **`series-video-planner`（本 skill）** | 体量判断 → 拆分逻辑 → 链接强度 → 系列规划.md |
 | ② 制作 | `handdrawn-explainer-video` | 每集的调研/分镜/动画/自检/渲染/交付（本 skill Step 5 派 SubAgent 时用的就是它） |
-| ③ 封面 | `douyin-cover-generator` | 成片封面，默认 3:4 竖版（1080×1440）+ 4:3 横版（1440×1080） |
+| ③ 封面 | `douyin-cover-generator` | 成片封面，默认 3:4 竖版（1080×1440）+ 4:3 横版（1920×1440） |
 
 安装见合集仓库根 README：clone 一次后把 `skills/<name>/` 链接进所用工具的 skill 加载目录即可。
 

@@ -1,6 +1,6 @@
 # douyin-cover-generator
 
-抖音高点击封面生成 skill —— 输入视频稿件或主题，产出 **3:4 竖版（1080×1440）+ 4:3 横版（1440×1080）** 两张高点击率封面。
+抖音高点击封面生成 skill —— 输入视频稿件或主题，产出 **3:4 竖版（1080×1440）+ 4:3 横版（1920×1440）** 两张高点击率封面。
 
 纯代码渲染：HTML + Canvas 2D + playwright-core 截图，与 [handdrawn-explainer-video](../handdrawn-explainer-video/) 的 `render.js` 完全同栈、同依赖、同 Chromium 探测逻辑。**零积分、零外部生成能力依赖**（硬性禁止 ImageGen/VideoGen）。
 

@@ -10,7 +10,7 @@
 |---|---|---|
 | [**handdrawn-explainer-video**](skills/handdrawn-explainer-video/) | 把任意主题做成 ≤3 分钟手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染 1080p MP4，无配音） | 教学视频、科普短片、手绘动画、讲解视频 |
 | [**series-video-planner**](skills/series-video-planner/) | 把万字长文 / 大专题拆成 N 集系列视频并做成合集的方法论（拆分逻辑 + 链接强度 + 双线制作） | 系列视频、视频合集、分集、多集视频、大主题拆分 |
-| [**douyin-cover-generator**](skills/douyin-cover-generator/) | 纯代码生成高点击率封面，默认 **3:4 竖版（1080×1440）+ 4:3 横版（1440×1080）** 一套两张 | 抖音封面、生成封面、视频封面、缩略图、做封面 |
+| [**douyin-cover-generator**](skills/douyin-cover-generator/) | 纯代码生成高点击率封面，默认 **3:4 竖版（1080×1440）+ 4:3 横版（1920×1440）** 一套两张 | 抖音封面、生成封面、视频封面、缩略图、做封面 |
 
 ### 三个 skill 怎么配合
 

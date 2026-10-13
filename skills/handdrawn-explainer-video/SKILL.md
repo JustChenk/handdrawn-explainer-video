@@ -52,7 +52,7 @@ cd ~/.codebuddy/skills/vibe-video-skills && git sparse-checkout set skills/handd
 |---|---|---|
 | `series-video-planner` | 大主题 → N 集系列视频的规划方法论（拆分逻辑/链接强度/勘误台账/进度表） | 主题一集讲不完（>180s 或 >1 个心智模型），要先拆集目 |
 | **`handdrawn-explainer-video`（本 skill）** | 单集生产全流程：调研 → 分镜 → 动画 → 自检 → 渲染 → 交付 | 每集的实际制作 |
-| `douyin-cover-generator` | 纯代码生成高点击封面（默认 3:4 竖版 1080×1440 + 4:3 横版 1440×1080） | 成片出来后补封面物料 |
+| `douyin-cover-generator` | 纯代码生成高点击封面（默认 3:4 竖版 1080×1440 + 4:3 横版 1920×1440） | 成片出来后补封面物料 |
 
 **运行时依赖（首次使用前装一次）**
 
