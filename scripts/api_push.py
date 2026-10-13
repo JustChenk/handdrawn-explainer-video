@@ -18,8 +18,8 @@ import argparse, base64, os, requests
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--repo", default="JustChenk/handdrawn-explainer-video")
-    ap.add_argument("--dir", default="/root/.codebuddy/skills/handdrawn-explainer-video")
+    ap.add_argument("--repo", default="JustChenk/vibe-video-skills")
+    ap.add_argument("--dir", default=".")
     ap.add_argument("--branch", default="main")
     ap.add_argument("--message", default="sync from sandbox via API")
     args = ap.parse_args()
@@ -31,9 +31,9 @@ def main():
     H = {"Authorization": f"Bearer {TOKEN}", "Accept": "application/vnd.github+json"}
     s = requests.Session(); s.headers.update(H)
 
-    # 收集文件（排除 .git / node_modules / 渲染产物）
+    # 收集文件（排除 .git / node_modules / 渲染产物；与仓库 .gitignore 保持一致，不排除 .png）
     EXCLUDE_DIRS = {".git", "node_modules", "frames", "testframes", "__pycache__"}
-    EXCLUDE_EXT = {".jpg", ".png", ".mp4", ".pyc"}
+    EXCLUDE_EXT = {".jpg", ".jpeg", ".mp4", ".pyc"}
     files = []
     for root, dirs, names in os.walk(args.dir):
         dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]

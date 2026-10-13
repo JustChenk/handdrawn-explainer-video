@@ -1,7 +1,7 @@
 # 沙箱环境 Git 同步 GitHub：踩坑与解决方法
 
-> 记录 2026-10-11 将 `handdrawn-explainer-video` skill 推送到 GitHub 时遇到的问题与最终解法，供以后推送任何项目时直接套用，避免反复试错。
-> 配套脚本：`~/.codebuddy/skills/handdrawn-explainer-video/scripts/api_push.py`（已验证可用）
+> 记录 2026-10-11 将 `handdrawn-explainer-video` skill 推送到 GitHub 时遇到的问题与最终解法（2026-10-13 该仓库演化为 [vibe-video-skills](https://github.com/JustChenk/vibe-video-skills) 合集仓库），供以后推送任何项目时直接套用，避免反复试错。
+> 配套脚本：`<repo>/scripts/api_push.py`（本仓库根目录，已验证可用）
 
 ---
 
@@ -80,7 +80,7 @@
 一键使用：
 ```bash
 export GH_TOKEN=github_pat_xxx
-python3 ~/.codebuddy/skills/handdrawn-explainer-video/scripts/api_push.py \
+python3 <repo>/scripts/api_push.py \
   --repo OWNER/REPO --dir /path/to/dir --branch main --message "sync"
 ```
 - 自动排除 `.git/node_modules/frames/*.jpg/*.mp4` 等

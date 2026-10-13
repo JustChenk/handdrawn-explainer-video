@@ -3,13 +3,13 @@ name: handdrawn-explainer-video
   
 description: "把任意主题制作成 3 分钟以内的手绘卡通风格科普教学短片（JS + Canvas 逐帧渲染成 1080p MP4，无配音）。当用户要求'做个教学视频/科普短片/手绘动画视频/讲解视频'，或给出一个主题、文章链接希望生成讲解视频时使用。关键词：教学视频、科普视频、手绘动画、科普短片、Canvas 动画、讲解视频"
   
-version: "1.4.0"
+version: "1.5.0"
   
 author: "CodeBuddy AI"
   
 created: "2026-10-10"
   
-changelog: "1.4.0 新增 scripts/precheck.js 渲染前静态自检（用函数真实签名校验所有调用点，专治参数错位/漏参/时间基准错误，--dump 可打印参数绑定）；阶段 4 强制先跑 precheck；阶段 3 增加『API 签名速查表』与签名纪律；技术备忘新增第 7 条（参数错位类 bug 的成因与防护）。 1.3.1 阶段 3 字体引入支持 junction 零复制共享（Windows 推荐）或 copy 自包含二选一；技术备忘补充 rationale 与实测结论。 1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
+changelog: "1.5.0 迁入 vibe-video-skills 合集仓库（位于 skills/handdrawn-explainer-video/）：安装说明改为「clone 合集 + 链接 skill 目录」两种方式，补充同仓库另两个 skill（series-video-planner / douyin-cover-generator）的串联关系；本 skill 制作流程无功能变更。 1.4.0 新增 scripts/precheck.js 渲染前静态自检（用函数真实签名校验所有调用点，专治参数错位/漏参/时间基准错误，--dump 可打印参数绑定）；阶段 4 强制先跑 precheck；阶段 3 增加『API 签名速查表』与签名纪律；技术备忘新增第 7 条（参数错位类 bug 的成因与防护）。 1.3.1 阶段 3 字体引入支持 junction 零复制共享（Windows 推荐）或 copy 自包含二选一；技术备忘补充 rationale 与实测结论。 1.3.0 阶段 0 新增 research/ 原始调研留痕（每条来源一个 md：URL+摘要+原文摘录），调研材料数据点附引用链接，形成 成片→调研材料→原始来源 三层溯源链。 1.2.0 恢复『安装』章节(通用表述)、README 作品演示与参考文献；纳入 Git API 推送脚本与经验手册。 1.1.0 所有产物统一收纳到 <项目根>/<主题文件夹>/；路径去掉 /workspace 等 Linux 假设"  
 ---
 
 # 手绘卡通教学视频生成器
@@ -18,26 +18,41 @@ changelog: "1.4.0 新增 scripts/precheck.js 渲染前静态自检（用函数�
 
 ## 安装（Installation）
 
-本仓库是一个标准的 **Agent Skill 包**（`SKILL.md` 清单 + 模板/脚本/字体等资源文件），任何支持 Agent Skill 机制的 AI 编程助手都能加载它。安装方法 = **把仓库放进对应工具的 skill 加载目录**。下面以 CodeBuddy 为例：
+本 skill 是 [vibe-video-skills](https://github.com/JustChenk/vibe-video-skills) 合集仓库里的一个标准 **Agent Skill 包**（`SKILL.md` 清单 + 模板/脚本/字体等资源文件），位于仓库的 `skills/handdrawn-explainer-video/`。任何支持 Agent Skill 机制的 AI 编程助手都能加载它。安装方法 = **把 skill 目录放进所用工具的 skill 加载目录**。
 
-**方式 A · 用户级安装（对所有项目生效，推荐）**
-
-```bash
-git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
-  ~/.codebuddy/skills/handdrawn-explainer-video
-```
-
-**方式 B · 项目级安装（仅当前项目生效）**
+**方式 A · 克隆一次 + 链接（推荐，与同仓库另两个 skill 共用一份）**
 
 ```bash
+git clone https://github.com/JustChenk/vibe-video-skills.git ~/vibe-video-skills
+
+# 用户级（对所有项目生效，以 CodeBuddy 为例）
+ln -s ~/vibe-video-skills/skills/handdrawn-explainer-video ~/.codebuddy/skills/handdrawn-explainer-video
+# Windows 零复制（无需管理员权限）：
+#   mklink /J "%USERPROFILE%\.codebuddy\skills\handdrawn-explainer-video" "%USERPROFILE%\vibe-video-skills\skills\handdrawn-explainer-video"
+
+# 项目级（仅当前项目生效）
 cd <你的项目根目录>
-git clone https://github.com/JustChenk/handdrawn-explainer-video.git \
-  .codebuddy/skills/handdrawn-explainer-video
+ln -s ~/vibe-video-skills/skills/handdrawn-explainer-video .codebuddy/skills/handdrawn-explainer-video
 ```
 
-其他支持 Agent Skill 规范的工具安装方法完全相同，只是目录不同——把上面命令里的 `~/.codebuddy/skills/`（或 `.codebuddy/skills/`）换成所用工具的 skill 目录即可（例如 `~/.claude/skills/`、`~/.opencode/skills/` 等，以各自文档为准）。
+**方式 B · 只取这一个 skill（sparse-checkout，不下载其余内容）**
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/JustChenk/vibe-video-skills.git ~/.codebuddy/skills/vibe-video-skills
+cd ~/.codebuddy/skills/vibe-video-skills && git sparse-checkout set skills/handdrawn-explainer-video
+```
+
+其他支持 Agent Skill 规范的工具安装方法完全相同，只是目录不同——把上面命令里的 `~/.codebuddy/skills/`（或 `.codebuddy/skills/`）换成所用工具的 skill 目录即可（例如 `~/.claude/skills/`、`~/.workbuddy/skills/`、项目级 `.dsh/skills/` 等，以各自文档为准）。
 
 安装后新开会话即可被自动发现（Skill 名称：`handdrawn-explainer-video`）。用户说"做个教学视频 / 科普短片 / 手绘动画视频"并给出主题时即触发。
+
+**同仓库的另两个 skill（可串联，也可单独用）**
+
+| Skill | 作用 | 什么时候用 |
+|---|---|---|
+| `series-video-planner` | 大主题 → N 集系列视频的规划方法论（拆分逻辑/链接强度/勘误台账/进度表） | 主题一集讲不完（>180s 或 >1 个心智模型），要先拆集目 |
+| **`handdrawn-explainer-video`（本 skill）** | 单集生产全流程：调研 → 分镜 → 动画 → 自检 → 渲染 → 交付 | 每集的实际制作 |
+| `douyin-cover-generator` | 纯代码生成高点击封面（默认 3:4 竖版 1080×1440 + 4:3 横版 1440×1080） | 成片出来后补封面物料 |
 
 **运行时依赖（首次使用前装一次）**
 

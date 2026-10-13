@@ -1,5 +1,15 @@
+# 运行时依赖
 node_modules/
-frames/
-*.jpg
-*.png
 __pycache__/
+*.pyc
+
+# 渲染 / 合成中间产物（体积大，本地生成即可）
+frames/
+frames_*/
+testframes/
+*.mp4
+*.jpg
+*.jpeg
+
+# 注意：*.png 不全局忽略——封面与 skill 静态素材可能需要入库，
+# 因此渲染产物请落在 frames/、testframes/ 或项目主题文件夹内。
