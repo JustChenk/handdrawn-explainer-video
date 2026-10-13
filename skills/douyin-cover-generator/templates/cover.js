@@ -59,6 +59,11 @@
 
   /* ---------- 标题折行：>12 字折 2 行，优先按标点/空格断行 ---------- */
   function wrapTitle(text, wrapAt, maxLines) {
+    /* 显式换行优先：标题里带 \n 就按 \n 切，便于人工控制断行位置（短行能拿到更大字号） */
+    if (text.indexOf('\n') >= 0) {
+      return text.split('\n').map(function (s) { return s.trim(); })
+        .filter(function (s) { return s; }).slice(0, maxLines);
+    }
     if (text.length <= wrapAt) return [text];
     var best = -1, bestScore = -1;
     for (var i = 1; i < text.length; i++) {
@@ -267,13 +272,16 @@
     }
   }
 
-  function drawTag(ctx, text, cx, cy, size, bg, fg) {
+  /* leftAlign=true 时 cx 为标签左缘（横版标题左对齐场景）；默认 cx 为标签中心 */
+  function drawTag(ctx, text, cx, cy, size, bg, fg, leftAlign) {
     ctx.font = '900 ' + size + 'px ' + FONT_STACK;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     var tw = ctx.measureText(text).width;
     var padX = size * 0.6, padY = size * 0.32;
-    roundRect(ctx, cx - tw / 2 - padX, cy - size / 2 - padY, tw + padX * 2, size + padY * 2, (size + padY * 2) / 2);
+    var boxW = tw + padX * 2;
+    if (leftAlign) cx = cx + boxW / 2;
+    roundRect(ctx, cx - boxW / 2, cy - size / 2 - padY, boxW, size + padY * 2, (size + padY * 2) / 2);
     ctx.fillStyle = bg;
     ctx.fill();
     ctx.fillStyle = fg;
@@ -292,12 +300,75 @@
     ctx.fillText(text, x, y);
   }
 
+  /* ---------- 系列标识（顶部小字，建立系列认知） ---------- */
+  function drawKicker(ctx, text, x, y, size, color, align) {
+    ctx.font = '700 ' + size + 'px ' + FONT_STACK;
+    ctx.textAlign = align || 'left';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(2, size / 8);
+    ctx.strokeStyle = 'rgba(0,0,0,0.88)';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  }
+
+  /* ---------- 大数字徽章（高点击核心锚点：一个数字/短词 + 可选小字说明） ---------- */
+  function drawBadge(ctx, b, cx, cy, size, o) {
+    var font = (o && o.font) || FONT_STACK;
+    var capSize = size * 0.30;
+    ctx.font = '900 ' + size + 'px ' + font;
+    var tw = ctx.measureText(b.text).width;
+    var cw = 0;
+    if (b.caption) { ctx.font = '700 ' + capSize + 'px ' + font; cw = ctx.measureText(b.caption).width; }
+    var innerW = Math.max(tw, cw);
+    var padX = size * 0.44, padY = size * 0.26;
+    var boxW = innerW + padX * 2;
+    var boxH = size + (b.caption ? capSize * 1.40 : 0) + padY * 2;
+    var bx = cx - boxW / 2, by = cy - boxH / 2, rad = boxH * 0.16;
+
+    /* 投影 + 色块 */
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.50)';
+    ctx.shadowBlur = size * 0.32;
+    ctx.shadowOffsetY = size * 0.09;
+    roundRect(ctx, bx, by, boxW, boxH, rad);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    ctx.restore();
+
+    /* 深色描边：保证压在任何背景上都立得住 */
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(3, size * 0.05);
+    ctx.strokeStyle = b.stroke || 'rgba(0,0,0,0.55)';
+    roundRect(ctx, bx, by, boxW, boxH, rad);
+    ctx.stroke();
+
+    /* 文字 */
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    var ty = cy - (b.caption ? capSize * 0.66 : 0);
+    ctx.font = '900 ' + size + 'px ' + font;
+    ctx.fillStyle = b.textColor;
+    ctx.fillText(b.text, cx, ty);
+    if (b.caption) {
+      ctx.font = '700 ' + capSize + 'px ' + font;
+      ctx.fillStyle = b.captionColor || b.textColor;
+      ctx.fillText(b.caption, cx, ty + size * 0.74);
+    }
+  }
+
   /* ---------- 主入口 ---------- */
   window.renderCover = function (config) {
     var cfg = {
       title: (config && config.title) || '',
       subtitle: (config && config.subtitle) || '',
       tag: (config && config.tag) || '',
+      kicker: (config && config.kicker) || '',
+      badge: Object.assign(
+        { text: '', caption: '', color: '#FF3B30', textColor: '#FFFFFF', captionColor: '', stroke: '' },
+        (config && config.badge) || {}
+      ),
       ratio: (config && config.ratio) || '3:4',
       size: (config && config.size) || null,
       bg: Object.assign({ type: 'gradient', src: '', darken: 0.25, scrim: true, style: 'grid' }, config && config.bg),
@@ -336,20 +407,24 @@
       var fontSize = fitTitle(ctx, lines, cfg.font || FONT_STACK, maxWidth, maxSize, 30);
 
       if (vertical) {
-        // 竖版：标题上半区居中 / 标签中部 / 副标题底部
+        // 竖版：系列标识顶部 / 标题上半区居中 / 标签中部 / 大数字徽章中下 / 副标题底部
+        if (cfg.kicker) drawKicker(ctx, cfg.kicker, w / 2, h * 0.060, h * 0.026, cfg.colors.subtitle, 'center');
         drawTitle(ctx, lines, fontSize, w / 2, h * 0.30, {
           font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
           bar: cfg.bar, shadow: cfg.shadow, align: 'center'
         });
         if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.545, h * 0.030, cfg.colors.tag, cfg.colors.tagText);
+        if (cfg.badge.text) drawBadge(ctx, cfg.badge, w / 2, h * 0.705, h * 0.105, { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w / 2, h * 0.885, h * 0.036, cfg.colors.subtitle, true);
       } else {
-        // 横版：标题左侧 / 标签标题上方 / 副标题标题下方
+        // 横版：标识左上 / 标题左侧 / 标签标题上方 / 大数字徽章右侧 / 副标题标题下方
+        if (cfg.kicker) drawKicker(ctx, cfg.kicker, w * 0.06, h * 0.115, h * 0.026, cfg.colors.subtitle, 'left');
         drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.46, {
           font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
           bar: cfg.bar, shadow: cfg.shadow, align: 'left'
         });
-        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.20, h * 0.030, cfg.colors.tag, cfg.colors.tagText);
+        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.030, cfg.colors.tag, cfg.colors.tagText, true);
+        if (cfg.badge.text) drawBadge(ctx, cfg.badge, w * 0.775, h * 0.50, h * 0.115, { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w * 0.06, h * 0.78, h * 0.036, cfg.colors.subtitle, false);
       }
     }
