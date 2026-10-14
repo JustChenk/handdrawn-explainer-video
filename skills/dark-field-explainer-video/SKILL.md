@@ -3,13 +3,13 @@ name: dark-field-explainer-video
 
 description: "把任意主题制作成「黑场发光字 + 数据可视化 + 粒子流场」风格的科技感动态图文科普短片（1080p MP4，JS + Canvas 逐帧渲染），又称 Opus5.5 风（该风格由 Claude Opus 5.5 主导设计）。风格接近参考片《「我爱你」说到第 1000 遍，信息量几乎为零》：近纯黑底 + 单层颗粒 + 橙红发光强调色 + 衬线大标题 + 极简数据图 + 长黑场转场。当用户要求做'科技感视频/高级感图文视频/暗色系解说视频/数据可视化视频/黑底金字那种风格的视频/Opus5.5 风/opus5.5风格'，或给出一个偏思辨、可量化的主题并要求用这种视觉语言呈现时使用。区别于 handdrawn-explainer-video（纸面手绘卡通）。关键词：科技感视频、暗场、发光字、数据可视化、粒子流场、动态图文、黑底科普、Opus5.5 风"
 
-version: "1.2.0"
+version: "1.2.1"
 
 author: "CodeBuddy AI"
 
 created: "2026-10-14"
 
-changelog: "1.0.0 首个版本。源自对参考片《「我爱你」说到第 1000 遍，信息量几乎为零》的抽帧逆向：固化「黑场 + 发光字 + 数据可视化 + 粒子流场」的视觉规格（references/style-spec.md）、六种分幕套路（references/scene-patterns.md）、可直跑的工程模板（templates/video-template.html）与渲染前静态自检 scripts/precheck.js。渲染管线复用 handdrawn-explainer-video 的 render.js / encode.sh，不重复实现。1.1.0 依 159s 实产成片与参考片的差距复盘：新增「三层结构语法」硬纪律（每幕 ≥2 层，杜绝纯黑底孤立文字的空洞幕）、数据可视化组件库（点阵网格 / 微光条目卡）、「大字压场渐晕」可读性手法与新幕式「档案墙幕」，并加入别名「Opus5.5 风」（该风格由 Claude Opus 5.5 主导设计）。1.2.0 依 Ep01 实战返工沉淀：precheck 新增 GLOW_NO_COLOR 静态检查（glow-r/glow-w 元素的 class 链缺显式 color 会渲染成黑字橙晕伪发光，渲染前无法目视发现），production-notes 补坑 2.7 与「定位四件套（left/top/size/color）」写法定式。"
+changelog: "1.0.0 首个版本。源自对参考片《「我爱你」说到第 1000 遍，信息量几乎为零》的抽帧逆向：固化「黑场 + 发光字 + 数据可视化 + 粒子流场」的视觉规格（references/style-spec.md）、六种分幕套路（references/scene-patterns.md）、可直跑的工程模板（templates/video-template.html）与渲染前静态自检 scripts/precheck.js。渲染管线复用 handdrawn-explainer-video 的 render.js / encode.sh，不重复实现。1.1.0 依 159s 实产成片与参考片的差距复盘：新增「三层结构语法」硬纪律（每幕 ≥2 层，杜绝纯黑底孤立文字的空洞幕）、数据可视化组件库（点阵网格 / 微光条目卡）、「大字压场渐晕」可读性手法与新幕式「档案墙幕」，并加入别名「Opus5.5 风」（该风格由 Claude Opus 5.5 主导设计）。1.2.0 依 Ep01 实战返工沉淀：precheck 新增 GLOW_NO_COLOR 静态检查（glow-r/glow-w 元素的 class 链缺显式 color 会渲染成黑字橙晕伪发光，渲染前无法目视发现），production-notes 补坑 2.7 与「定位四件套（left/top/size/color）」写法定式。1.2.1 补坑 2.8「渲染/编码赛跑」：重渲不清空 frames/ + 编码与渲染并行会让成片幕序错乱且错位不单调（ffprobe 完全正常，极难诊断），固化三条纪律——重渲先删整个 frames/、渲染编码严格串行、编码前验帧数与 mtime 单簇。"
 ---
 
 # 暗场发光图文视频生成器（Dark-Field Explainer Video）
