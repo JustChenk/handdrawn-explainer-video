@@ -1,6 +1,7 @@
 # 暗场发光图文视频生成器
 
-把任意主题制作成 **「黑场发光字 + 数据可视化 + 粒子流场」** 风格的科技感动态图文科普短片。
+把任意主题制作成 **「黑场发光字 + 数据可视化 + 粒子流场」** 风格的科技感动态图文科普短片，
+又称 **Opus5.5 风**（该风格由 Claude Opus 5.5 主导设计）。
 
 风格参照 `assets/「我爱你」说到第 1000 遍，信息量几乎为零.mp4`——
 近纯黑底、一层胶片颗粒、单一橙红强调色、衬线大标题、极简数据图、长黑场转场。
@@ -45,10 +46,10 @@ bash ../handdrawn-explainer-video/scripts/encode.sh \
 
 | 文件 | 内容 | 什么时候看 |
 |---|---|---|
-| `SKILL.md` | 风格定义七条硬规则、七阶段流程、技术铁律 | **先读这个** |
-| `references/style-spec.md` | 色彩/字体/发光/构图/节奏的**实测数值**，含反面清单 | 动手画每一幕时对照 |
-| `references/scene-patterns.md` | 六种分幕套路（数字/对比/公式/数据图/列举/粒子）与代码 | 排版时不知道用什么镜头 |
-| `references/production-notes.md` | 实测性能、五个已踩的坑、与其他 skill 的边界 | 出问题时查 |
+| `SKILL.md` | 风格定义八条硬规则、七阶段流程、技术铁律 | **先读这个** |
+| `references/style-spec.md` | 色彩/字体/发光/构图/**三层结构**/节奏的**实测数值**，含反面清单 | 动手画每一幕时对照 |
+| `references/scene-patterns.md` | 七种分幕套路（数字/对比/公式/数据图/列举/粒子/档案墙）与代码 | 排版时不知道用什么镜头 |
+| `references/production-notes.md` | 实测性能、六个已踩的坑、与其他 skill 的边界 | 出问题时查 |
 | `templates/video-template.html` | 可直接渲染的工程骨架（含三幕示例） | 起手 |
 | `scripts/precheck.js` | 渲染前静态自检 | 每次渲染前 |
 
@@ -82,5 +83,7 @@ bash ../handdrawn-explainer-video/scripts/encode.sh \
 
 ## 版本
 
+- **1.1.0**（2026-10-15）三层结构硬纪律（每幕 ≥2 层）+ 组件库（点阵网格 / 微光条目卡）+
+  压场渐晕手法 + 新幕式「档案墙幕」；加入别名 **Opus5.5 风**（该风格由 Claude Opus 5.5 主导设计）。
 - **1.0.0**（2026-10-14）首个版本，源自参考片抽帧逆向。
   详见 `SKILL.md` frontmatter 的 changelog。

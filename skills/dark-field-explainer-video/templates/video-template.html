@@ -67,6 +67,30 @@ html,body{height:100%;background:#000;overflow:hidden}
 /* ========== 幕 C：情绪粒子幕 ========== */
 #flow .day{left:110px;top:52px;font-size:36px;color:var(--accent);letter-spacing:2px;font-weight:700}
 #flow .hb{right:110px;top:52px;font-size:30px;color:var(--ink-dim);letter-spacing:2px}
+
+/* =========================================================
+   v1.1.0 通用组件库（示例三幕未启用，保持向后兼容；新幕式按需取用）
+   规格与入场时序详见 references/style-spec.md §5
+   ========================================================= */
+/* 大字压场渐晕：大数字/大标题压在气泡、流场、粒子上时，垫在背景层之上、文字之下。
+   数据图幕 / 数字幕压场用。禁止改用实底色块给文字垫底。 */
+.vignette{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 62% 55% at 50% 50%, rgba(10,10,12,.62) 0%, rgba(10,10,12,.38) 45%, transparent 72%)}
+
+/* 点阵网格：占比/概率可视化（数据图幕的格子形态；档案墙幕降透明度作背景层）。
+   逐格错峰 0.03~0.06s 点亮：cells.forEach((c,i)=>c.style.opacity=tw(p,.20+i*.045,.34+i*.045)) */
+.dots{display:grid;grid-template-columns:repeat(10,24px);gap:12px}
+.dots i{width:24px;height:24px;border-radius:4px;background:rgba(255,255,255,.06)}
+.dots i.on{background:rgba(255,106,69,.24)}   /* 点亮格 #ff6a45 @ 0.15~0.3 透明度 */
+
+/* 微光条目卡：列举幕（≥4 条必须卡化）与档案墙幕的条目容器，焦点条加 .focus。
+   入场逐条错峰 0.2~0.3s：opacity 0→1 + translateX 24px→0 */
+.rows{display:flex;flex-direction:column;gap:14px}
+.rows .row{display:flex;align-items:baseline;gap:22px;padding:14px 26px;
+  border-radius:10px;background:rgba(255,255,255,.025);
+  font-size:30px;line-height:1.6;color:var(--ink)}
+.rows .no{font-size:24px;color:var(--ink-dim);letter-spacing:2px;min-width:2.2em}
+.rows .row.focus .no,.rows .row.focus .tx{color:var(--accent-lo)}
 </style>
 </head>
 <body>
@@ -97,6 +121,14 @@ html,body{height:100%;background:#000;overflow:hidden}
     <div class="abs hb">H = 9.35 bit</div>
   </div>
 
+  <!-- v1.1.0 通用组件（以上三幕未启用，仅示例用法，不改动现有幕）：
+       .vignette  大字压场渐晕 —— 数据图幕/数字幕把大字压在气泡/流场上时，放背景层之上、文字之下：
+                  <div class="abs vignette"></div>
+       .dots      点阵网格 —— 占比/概率幕的中景（10×10 格，点亮格加 .on）；档案墙幕作背景层时容器 opacity 压半：
+                  <div class="abs dots"><i></i>…×100（其中 N 个 <i class="on"></i>）</div>
+       .rows      微光条目卡 —— 列举幕（≥4 条）与档案墙幕的条目容器，仅一条加 .focus 点橙：
+                  <div class="abs rows"><div class="row"><span class="no">01</span><span class="tx">条目文字</span></div>…</div>
+  -->
   <div class="abs sans" id="sub"></div>
 </div>
 
