@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>暗场发光图文 · 工程模板</title>
+<style>
+/* =========================================================
+   变量：改这里就能整体换色，其余样式不要动
+   ========================================================= */
+:root{
+  --bg:#0a0a0c;
+  --ink:#f2f2f4;        /* 正文 */
+  --ink-2:#b9b9c1;      /* 大标题 */
+  --ink-dim:#8a8a92;    /* 次级 */
+  --ink-mute:#5a5a62;   /* 弱化 */
+  --line:#2e2e36;       /* 描边 */
+  --accent:#ff4d2b;
+  --accent-lo:#ff6a45;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#000;overflow:hidden}
+
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;
+  transform-origin:center center;background:var(--bg);overflow:hidden}
+/* 胶片颗粒：去掉它就是塑料感 */
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.055;
+  mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+#fx{position:absolute;inset:0;width:1920px;height:1080px}
+
+.serif{font-family:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",serif}
+.sans{font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif}
+.abs{position:absolute}
+
+.scene{position:absolute;inset:0;opacity:0}
+/* 三层光晕 —— 发光的唯一正确做法，禁止用 text-stroke 冒充 */
+.glow-r{text-shadow:0 0 16px rgba(255,86,50,.60),0 0 54px rgba(255,70,40,.38),0 0 110px rgba(255,60,30,.20)}
+.glow-w{text-shadow:0 0 14px rgba(255,255,255,.40),0 0 46px rgba(255,255,255,.20)}
+
+#sub{left:0;right:0;bottom:44px;text-align:center;font-size:34px;color:#ececf0;
+  letter-spacing:1px;font-weight:500;opacity:0}
+#sub em{font-style:normal;color:var(--accent-lo);font-weight:700}
+
+/* ========== 幕 A：数字幕 ========== */
+#hook .cap{left:0;right:0;top:150px;text-align:center;font-size:40px;color:var(--accent);letter-spacing:3px;font-weight:700}
+#hook .box{left:50%;top:227px;width:620px;height:350px;margin-left:-310px;
+  border:3px solid var(--line);border-radius:46px;background:rgba(255,255,255,.012);
+  display:flex;align-items:center;justify-content:center}
+#hook .title{font-size:158px;color:var(--ink-2);letter-spacing:8px;-webkit-text-stroke:.6px rgba(255,255,255,.16)}
+#hook .lbl{left:0;right:0;top:648px;text-align:center;font-size:34px;color:var(--ink-dim);letter-spacing:6px}
+#hook .num{left:0;right:0;top:700px;text-align:center;font-size:118px;font-weight:700;color:var(--accent-lo);letter-spacing:2px}
+
+/* ========== 幕 B：数据图幕 ========== */
+#formula .formula{left:0;right:0;top:118px;text-align:center;font-size:84px;color:#eaeaee;font-style:italic;letter-spacing:2px}
+#formula .chart{left:180px;right:180px;top:300px;height:530px;display:flex;align-items:flex-end;gap:24px}
+#formula .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+#formula .pct{font-size:22px;color:var(--ink-dim);margin-bottom:12px}
+#formula .bar{width:100%;max-width:130px;background:#8a8a92;border-radius:2px}
+#formula .cat{font-size:26px;color:#d0d0d6;margin-top:20px}
+#formula .hint{left:180px;top:880px;font-size:22px;color:var(--ink-mute)}
+#formula .ent{right:150px;top:390px;width:360px;text-align:center}
+#formula .ent .k{font-size:34px;color:var(--ink-dim);letter-spacing:8px}
+#formula .ent .v{font-size:130px;font-weight:700;color:var(--accent-lo);line-height:1.15}
+#formula .ent .u{font-size:30px;color:var(--ink-dim);letter-spacing:6px}
+
+/* ========== 幕 C：情绪粒子幕 ========== */
+#flow .day{left:110px;top:52px;font-size:36px;color:var(--accent);letter-spacing:2px;font-weight:700}
+#flow .hb{right:110px;top:52px;font-size:30px;color:var(--ink-dim);letter-spacing:2px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="fx" width="1920" height="1080"></canvas>
+
+  <!-- 幕 A -->
+  <div class="scene sans" id="hook">
+    <div class="abs cap">第 1000 遍</div>
+    <div class="abs box"><div class="title serif">我爱你</div></div>
+    <div class="abs lbl">信息量</div>
+    <div class="abs num glow-r">≈ 0 bit</div>
+  </div>
+
+  <!-- 幕 B -->
+  <div class="scene sans" id="formula">
+    <div class="abs formula serif">H = −Σ p · log₂ p</div>
+    <div class="abs chart" id="chart"></div>
+    <div class="abs hint">TA 下一句会说什么？</div>
+    <div class="abs ent">
+      <div class="k">熵</div><div class="v glow-r">0.35</div><div class="u">bit</div>
+    </div>
+  </div>
+
+  <!-- 幕 C -->
+  <div class="scene sans" id="flow">
+    <div class="abs day">第 365 天</div>
+    <div class="abs hb">H = 9.35 bit</div>
+  </div>
+
+  <div class="abs sans" id="sub"></div>
+</div>
+
+<script>
+'use strict';
+/* =========================================================
+   模板使用说明
+   1) 在 TIMELINE 里增删幕；len = 该幕秒数
+   2) 在 SCENES 里写对应 id 的 draw(p) —— p 是幕内进度 0~1
+   3) DOM 结构写在 body 的 .scene 里，用 Q('#id .xxx') 取元素
+   4) 禁止在 draw() 里调用 Math.random / Date.now —— 必须确定性
+   ========================================================= */
+
+/* ---------- 时间轴 ---------- */
+const TIMELINE = [
+  { id: 'hook',    len: 8 },
+  { id: 'formula', len: 8 },
+  { id: 'flow',    len: 8 },
+];
+const FPS = 30;
+const DURATION = TIMELINE.reduce((a, s) => a + s.len, 0);
+/* 累加起点，幕外自动归零 */
+const SEC = {}; let _acc = 0;
+TIMELINE.forEach(s => { SEC[s.id] = _acc; _acc += s.len; });
+
+/* ---------- 通用工具 ---------- */
+/* 确定性随机源：保证「抽帧」与「全量渲染」的画面逐像素一致。
+   任何需要随机的地方都用 rnd()，不要用 Math.random()。 */
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rnd = mulberry32(20261014);
+const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const easeOut = v => 1 - Math.pow(1 - clamp(v), 3);
+const easeIO = v => { v = clamp(v); return v < .5 ? 4*v*v*v : 1 - Math.pow(-2*v+2, 3)/2; };
+/* 区间入场 + 幕尾统一淡出 */
+const tw = (p, a, b) => easeOut((p - a) / (b - a)) * (1 - clamp((p - .93) / .07));
+/* 幕透明度：0.35s 淡入、0.35s 淡出 → 幕间自然形成黑场 */
+const sceneOp = p => easeOut(p / .04) * (1 - clamp((p - .94) / .06));
+const Q = sel => document.querySelector(sel);
+const setOp = (sel, o, transform) => {
+  const el = Q(sel); el.style.opacity = o;
+  if (transform) el.style.transform = transform;
+};
+
+/* ---------- Canvas ---------- */
+const CV = document.getElementById('fx');
+const ctx = CV.getContext('2d');
+const clearCanvas = () => ctx.clearRect(0, 0, 1920, 1080);
+
+/* ===== 幕 A：漂浮消息背景（解析式，天生确定性） ===== */
+const MSGS = ['我爱你','早安','晚安','吃了吗','嗯','到了','在吗','好','哈哈','睡了','想你','注意身体'];
+const BUB = Array.from({ length: 150 }, () => ({
+  x: rnd()*2100 - 90, y: rnd()*1180,
+  sp: 16 + rnd()*30, a: .05 + rnd()*.17,
+  msg: MSGS[(rnd()*MSGS.length)|0], fs: 17 + rnd()*7
+}));
+BUB.forEach(b => {
+  b.w = b.msg.length * b.fs + 34; b.h = b.fs + 30;
+  b.ts = `${8+((rnd()*13)|0)}:${String((rnd()*60)|0).padStart(2,'0')} ${String((rnd()*900)|0).padStart(3,'0')}`;
+});
+function rrect(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x+r, y); c.arcTo(x+w, y, x+w, y+h, r);
+  c.arcTo(x+w, y+h, x, y+h, r); c.arcTo(x, y+h, x, y, r); c.arcTo(x, y, x+w, y, r); c.closePath();
+}
+function drawBubbles(t) {
+  clearCanvas();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const b of BUB) {
+    const span = 1180 + b.h;
+    const y = (((b.y - b.sp*t) % span) + span) % span - b.h;
+    ctx.globalAlpha = b.a;
+    ctx.fillStyle = 'rgba(255,255,255,.055)'; rrect(ctx, b.x, y, b.w, b.h, b.h/2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.42)';
+    ctx.font = `${b.fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.fillText(b.msg, b.x + b.w/2, y + b.h/2 + 1);
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.font = `${(b.fs*0.72)|0}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.fillText(b.ts, b.x + b.w/2, y + b.h + 12);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ===== 幕 B：柱状图 ===== */
+const DATA = [['晚安',95],['嗯',4.1],['好',0.9],['哈哈',0.3],['在吗',0],['到了',0],['吃了',0],['睡了',0]];
+const chart = document.getElementById('chart');
+chart.innerHTML = DATA.map(([k, v]) => `
+  <div class="col">
+    <div class="pct">${v.toFixed(1)}%</div>
+    <div class="bar" data-h="${v}"></div>
+    <div class="cat">${k}</div>
+  </div>`).join('');
+const BARS = [...chart.querySelectorAll('.bar')];
+const MAXH = 500, UNIT = MAXH / 95;
+
+/* ===== 幕 C：流场粒子 ===== */
+const PAL = ['#2ee6b0','#ff7a55','#e07aa8','#9dc0ff','#e8e8ee','#4dd0c0'];
+let flow = { ps: [], simT: -1 };
+function resetFlow() {
+  /* 每次 reset 都从同一种子重开：跳播重演的结果与逐帧推进完全一致 */
+  const r = mulberry32(20261014);
+  flow.ps = Array.from({length: 1000}, () => ({
+    x: r()*1920, y: r()*1080, h: (r()*PAL.length)|0
+  }));
+  flow.rnd = r;
+  flow.simT = 0;
+  ctx.globalAlpha = 1; ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, 0, 1920, 1080);
+}
+function stepFlow() {
+  const tt = flow.simT;
+  /* 清屏 alpha 是"拖尾长度"的总开关：太小时线条会绕成涡核，太大则没有丝感 */
+  ctx.fillStyle = 'rgba(10,10,12,0.042)'; ctx.fillRect(0, 0, 1920, 1080);
+  ctx.lineWidth = 1.25; ctx.globalAlpha = .30;
+  for (const p of flow.ps) {
+    const dx = p.x - 960, dy = p.y - 540;
+    const r = Math.hypot(dx, dy) + 1e-6, ang = Math.atan2(dy, dx);
+    /* 基角 1.05rad：径向分量更足，粒子持续向外飞散而非原地绕圈 */
+    const a = ang + 1.05 + Math.sin(r*0.0074 - tt*1.6)*0.62 + Math.cos(ang*2.7 + tt*1.1)*0.36;
+    const nx = p.x + Math.cos(a)*7.5, ny = p.y + Math.sin(a)*7.5;
+    ctx.strokeStyle = PAL[p.h];
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); ctx.stroke();
+    p.x = nx; p.y = ny;
+    if (p.x < -60 || p.x > 1980 || p.y < -60 || p.y > 1140) {
+      p.x = 960 + (flow.rnd()-.5)*620; p.y = 540 + (flow.rnd()-.5)*620;
+    }
+  }
+  ctx.globalAlpha = 1;
+  flow.simT += 1/30;
+}
+/* 确定性推进：跳播跨度过大就重演，guard 防死循环 */
+function seekFlow(target) {
+  if (target < flow.simT - 1e-6 || target - flow.simT > 0.6) resetFlow();
+  let guard = 0;
+  while (flow.simT + 1/30 <= target + 1e-6 && guard++ < 900) stepFlow();
+}
+
+/* ---------- 各幕绘制 ---------- */
+const SUBS = {
+  hook:    '它现在带来的信息量，几乎是<em>零</em>。',
+  formula: '就是<em>信息熵</em>：平均来说，你有多猜不到。',
+  flow:    '一次<em>意外</em>，'
+};
+const SCENES = {
+  hook(p, t) {
+    drawBubbles(t);
+    setOp('#hook .cap',   tw(p, .04, .18));
+    const bo = tw(p, .10, .30);
+    setOp('#hook .box',   bo, `scale(${.94 + .06*easeIO((p-.10)/.20)})`);
+    setOp('#hook .title', tw(p, .20, .44), null);
+    Q('#hook .title').style.transform = `translateY(${26*(1-easeOut((p-.20)/.24))}px)`;
+    setOp('#hook .lbl',   tw(p, .44, .56));
+    setOp('#hook .num',   tw(p, .54, .76), `scale(${.86 + .14*easeOut((p-.54)/.22)})`);
+  },
+  formula(p) {
+    clearCanvas();
+    setOp('#formula .formula', tw(p, .02, .20));
+    const grow = easeOut((p - .24) / .46);
+    BARS.forEach(b => { b.style.height = Math.max(4, (+b.dataset.h) * UNIT * grow) + 'px'; });
+    setOp('#formula .chart', tw(p, .20, .34));
+    setOp('#formula .hint',  tw(p, .40, .54));
+    setOp('#formula .ent',   tw(p, .58, .84), `translateY(${18*(1-easeOut((p-.58)/.26))}px)`);
+  },
+  flow(p, t) {
+    seekFlow(t - SEC.flow);
+    setOp('#flow .day', tw(p, .05, .22));
+    setOp('#flow .hb',  tw(p, .12, .30));
+  }
+};
+
+/* ---------- 主渲染 ---------- */
+const SUB = document.getElementById('sub');
+function frame(t) {
+  t = Math.max(0, Math.min(t, DURATION - 1e-6));
+  let cur = TIMELINE[0], p = 0;
+  for (const s of TIMELINE) {
+    if (t >= SEC[s.id] && t < SEC[s.id] + s.len) { cur = s; break; }
+  }
+  p = (t - SEC[cur.id]) / cur.len;
+
+  /* 每幕按自己的局域时间算透明度 —— 幕外自动归零，避免互相污染 */
+  TIMELINE.forEach(s => {
+    document.getElementById(s.id).style.opacity = sceneOp((t - SEC[s.id]) / s.len);
+  });
+
+  SCENES[cur.id](p, t);
+
+  SUB.innerHTML = SUBS[cur.id] || '';
+  SUB.style.opacity = tw(p, .74, .88);
+}
+
+/* 宿主接口：render.js 调用。一旦接管，实时预览立刻让位 */
+window.renderFrame = t => { window.__hostDriven = true; frame(t); };
+window.__meta = { fps: FPS, duration: DURATION };
+
+/* 浏览器实时预览 */
+const fit = () => {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  document.getElementById('stage').style.transform = `translate(-50%,-50%) scale(${s})`;
+};
+addEventListener('resize', fit); fit();
+(function loop() {
+  if (!window.__hostDriven) frame((performance.now() / 1000) % DURATION);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
