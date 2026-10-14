@@ -13,6 +13,7 @@
      3. 缺少 __meta.duration            → 无法交叉校验时长
      4. TIMELINE 总长 != 传入的渲染时长  → 尾部场景根本没被渲染
      5. 外链资源（img/@font-face/脚本）  → 无头浏览器离线渲染失败
+     6. glow-r/glow-w 元素无显式 color   → 黑字橙晕伪发光（坑 2.7，渲染后才发现）
    WARN 项：Math.random、Date/performance.now 出现在渲染路径、canvas 非 1920×1080 等
    ========================================================= */
 const fs = require('fs');
@@ -118,6 +119,39 @@ canvases.forEach(m => {
 /* ---- 8. 预览循环唯一性 ---- */
 const rafCount = (src.match(/requestAnimationFrame/g) || []).length;
 if (rafCount > 1) add('WARN', 'MULTI_RAF', `出现 ${rafCount} 处 requestAnimationFrame，应只有一处实时预览循环`);
+
+/* ---- 9. 焦点发光字必须有显式 color（防「黑字橙晕」伪发光，坑 2.7） ----
+   glow-r/glow-w 元素的 class 链上（含 id、行内 style）找不到任何显式 color 声明时，
+   浏览器默认继承到黑色字身，只剩 text-shadow 橙晕 —— 渲染前看不出来，渲染后是暗红浮雕。 */
+(function checkGlowColor() {
+  const css = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
+  const colorByClass = new Set(), colorById = new Set();
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/(^|[^-\w])color\s*:/.test(m[2])) continue;   // 排除 background-color / border-color 等
+    for (const sel of m[1].split(',')) {
+      const ids = [...sel.matchAll(/#([\w-]+)/g)].map(x => x[1]);
+      const cls = [...sel.matchAll(/\.([\w-]+)/g)];
+      ids.forEach(id => colorById.add(id));
+      if (cls.length) colorByClass.add(cls[cls.length - 1][1]);   // 按「最内层 class」记账
+    }
+  }
+  for (const m of src.matchAll(/<[^>]+\bclass\s*=\s*["']([^"']+)["'][^>]*>/g)) {
+    const classes = m[1].split(/\s+/);
+    if (!classes.some(c => c === 'glow-r' || c === 'glow-w')) continue;
+    const tag = m[0];
+    const inlineColor = /\bstyle\s*=\s*["'][^"']*\bcolor\s*:/.test(tag);
+    const idM = tag.match(/\bid\s*=\s*["']([\w-]+)["']/);
+    const covered = inlineColor
+      || (idM && colorById.has(idM[1]))
+      || classes.some(c => colorByClass.has(c));
+    if (!covered) {
+      add('ERROR', 'GLOW_NO_COLOR',
+        `发光元素 class="${m[1].trim()}" 的 class 链上没有任何显式 color —— 会渲染成黑字+橙晕伪发光。` +
+        `给定位 class 补 color:var(--accent-lo)（白发光用 #f2f2f4），别依赖继承`,
+        lineOf(m.index));
+    }
+  }
+})();
 
 /* ---- 输出 ---- */
 const order = { ERROR: 0, WARN: 1, INFO: 2 };
