@@ -15,11 +15,18 @@ node scripts/render-cover.js --title "别再踩这5个坑" --subtitle "90%的新
 ffmpeg -ss 5 -i 成片.mp4 -frames:v 1 frame.png
 node scripts/render-cover.js --title "信的人多了，假的也成了真？" --subtitle "信念一变，现实也跟着变" \
   --tag "反身性" --ratio 4:3 --bg frame.png --darken 0.35 --out 封面_横版4x3_反身性.png
+
+# 系列化运营：系列名当主角、片名钩子降一档（--layout brand）
+node scripts/render-cover.js --title $'687条建议\n只算四笔账' --subtitle "命 · 钱 · 自由 · 时间精力" \
+  --tag "系列总览" --kicker "人生高性价比指南" --badge "34" --badge-caption "集全系列" \
+  --layout brand --ratio 3:4 --style dazibao --out 封面_竖版3x4_总览.png
 ```
 
 `--ratio` 支持 `3:4`（默认）/ `4:3` / `9:16` / `16:9` / `1:1`，也可用 `--size WxH` 自定义。
 
-完整方法论（8 项强制标准、版式规范、标题类型匹配表、视觉风格选型表、参数表）见 [SKILL.md](SKILL.md)。
+**竖版是主交付**：竖版吃手机信息流、曝光量远高于横版，字号层级与缩略图可读性直接决定播放量——竖版先渲染先自检，并缩到 1/4（270×360）确认主角一行仍可读。
+
+完整方法论（8 项强制标准、版式规范、两种版式、标题类型匹配表、视觉风格选型表、参数表）见 [SKILL.md](SKILL.md)。
 
 ## 结构
 

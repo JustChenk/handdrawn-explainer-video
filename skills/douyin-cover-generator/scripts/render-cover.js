@@ -8,6 +8,9 @@
  *   node render-cover.js --title "别再踩这5个坑" --subtitle "90%的人中招" --tag "避坑" \
  *     --ratio 3:4 --style dazibao --out 封面_竖版3x4.png
  *   node render-cover.js --title "..." --ratio 4:3 --bg frame.png --darken 0.25 --out 封面_横版4x3.png
+ *   # 系列名当主角（片名自动降一档）:
+ *   node render-cover.js --title "687条建议\n只算四笔账" --kicker "人生高性价比指南" \
+ *     --layout brand --ratio 3:4 --style dazibao --out 封面_竖版3x4.png
  *
  * 默认比例: 竖版 3:4（1080x1440）; 横版 4:3（1920x1440）
  * 可选比例: 3:4 / 4:3 / 9:16 / 16:9 / 1:1 / 自定义 --size WxH
@@ -107,8 +110,20 @@ function buildConfig() {
     title: arg('--title', ''),
     subtitle: arg('--subtitle', ''),
     tag: arg('--tag', ''),
+    tagScale: parseFloat(arg('--tag-scale', '2.2')),
+    kicker: arg('--kicker', ''),
+    badge: {
+      text: arg('--badge', ''),
+      caption: arg('--badge-caption', ''),
+      color: arg('--badge-color', '#FF3B30'),
+      textColor: arg('--badge-text-color', '#FFFFFF'),
+      captionColor: arg('--badge-caption-color', '')
+    },
     ratio,
     size,
+    layout: arg('--layout', 'title'),
+    kickerScale: parseFloat(arg('--kicker-scale', '1')),
+    titleScale: parseFloat(arg('--title-scale', '1')),
     bg: bgPath
       ? { type: 'image', src: pathToFileURL(path.resolve(bgPath)).href, darken: parseFloat(arg('--darken', '0.25')), scrim: !hasFlag('--no-scrim') }
       : { type: 'gradient', style: arg('--style', 'grid') },
@@ -130,10 +145,11 @@ function buildConfig() {
     const fromFile = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
     const merged = Object.assign({}, fromFile, cfg, {
       bg: Object.assign({}, fromFile.bg, cfg.bg),
-      colors: Object.assign({}, fromFile.colors, cfg.colors)
+      colors: Object.assign({}, fromFile.colors, cfg.colors),
+      badge: Object.assign({}, fromFile.badge, cfg.badge)
     });
     // CLI 未显式传的字段回退为文件值
-    for (const k of ['title', 'subtitle', 'tag', 'ratio', 'size', 'bar', 'shadow', 'font']) {
+    for (const k of ['title', 'subtitle', 'tag', 'kicker', 'ratio', 'size', 'layout', 'kickerScale', 'titleScale', 'bar', 'shadow', 'font']) {
       if (!process.argv.includes('--' + k.replace(/([A-Z])/g, '-$1').toLowerCase()) && fromFile[k] !== undefined) merged[k] = fromFile[k];
     }
     return merged;
@@ -145,6 +161,8 @@ function buildConfig() {
   const cfg = buildConfig();
   const OUT = arg('--out', '');
   if (!cfg.title) { console.error('缺少 --title（主标题必填）'); process.exit(1); }
+  if (['title', 'brand'].indexOf(cfg.layout) < 0) { console.error('--layout 只能是 title（片名当主角）或 brand（系列标识当主角）'); process.exit(1); }
+  if (cfg.layout === 'brand' && !cfg.kicker) { console.error('--layout brand 需要同时给 --kicker（系列标识），否则没有主角可放'); process.exit(1); }
   if (!OUT) { console.error('缺少 --out（输出路径必填）'); process.exit(1); }
   if (cfg.bg.type === 'image' && !fs.existsSync(arg('--bg', ''))) {
     console.error('背景图不存在: ' + arg('--bg', '')); process.exit(1);

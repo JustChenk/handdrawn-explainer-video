@@ -7,7 +7,9 @@
  *
  * 对外接口：window.renderCover(config) -> Promise<void>
  *   config = {
- *     title, subtitle, tag: string
+ *     title, subtitle, tag, kicker: string
+ *     layout: 'title' | 'brand'                （默认 title = 片名当主角；brand = 系列标识当主角）
+ *     kickerScale, titleScale: number           （字号缩放，默认 1；品牌优先版式下微调用）
  *     ratio: '3:4' | '4:3' | '9:16' | '16:9' | '1:1'   （默认 3:4 竖版）
  *     size: [w, h]                             （可选，覆盖 ratio 默认画布）
  *     bg: { type: 'gradient' | 'image', src?: string, darken?: number, scrim?: boolean, style?: string }
@@ -16,6 +18,11 @@
  *     shadow: boolean    （标题柔和投影）
  *     font: string       （自定义字体族；'' = 默认字体栈）
  *   }
+ *
+ * 版式（layout）：
+ *   title（默认）—— 片名是封面主角：片名巨型黄字，kicker 只是顶部/左上角的小字系列标识。
+ *   brand        —— 系列标识是封面主角：kicker 用主标题样式（主色+描边+投影）放到片名原来的
+ *                   位置，片名降一档为白色副行。系列化运营（观众先认系列、再认单集）时用。
  * ========================================================= */
 (function () {
   'use strict';
@@ -44,6 +51,12 @@
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+
+  /** 正数取用，否则回退默认值（给 --kicker-scale / --title-scale 这类倍率参数用） */
+  function num(v, dflt) {
+    var n = parseFloat(v);
+    return isFinite(n) && n > 0 ? n : dflt;
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -371,6 +384,10 @@
       ),
       ratio: (config && config.ratio) || '3:4',
       size: (config && config.size) || null,
+      layout: (config && config.layout) || 'title',
+      kickerScale: num(config && config.kickerScale, 1),
+      titleScale: num(config && config.titleScale, 1),
+      tagScale: num(config && config.tagScale, 1),
       bg: Object.assign({ type: 'gradient', src: '', darken: 0.25, scrim: true, style: 'grid' }, config && config.bg),
       colors: Object.assign({ title: '#FFD400', stroke: '#141414', subtitle: '#FFFFFF', tag: '#FF3B30', tagText: '#FFFFFF' }, config && config.colors),
       bar: (config && config.bar) || '',
@@ -397,35 +414,67 @@
         drawProceduralBg(ctx, w, h, cfg.bg.style || 'grid');
       }
 
-      // 标题：折行 + 自适应字号
+      /* 品牌优先版式：系列标识当主角、片名钩子降一档（有 kicker 时才生效） */
+      var brand = cfg.layout === 'brand' && !!cfg.kicker;
+      var fontFamily = cfg.font || FONT_STACK;
+
+      // 折行 + 自适应字号
       var lines = wrapTitle(cfg.title, 12, 2);
-      var maxSize = vertical ? h * 0.115 : h * 0.16;
+      var kickerLines = brand ? wrapTitle(cfg.kicker, 12, 2) : null;
       // 横版标题栏宽度：画布越"方"（4:3 比 16:9 窄）标题栏越宽，避免 4:3 下字号被压太小
       var aspect = w / h;
       var squash = Math.max(0, Math.min(1, (16 / 9 - aspect) / (16 / 9 - 4 / 3)));
-      var maxWidth = vertical ? w * 0.86 : w * (0.46 + squash * 0.06);
-      var fontSize = fitTitle(ctx, lines, cfg.font || FONT_STACK, maxWidth, maxSize, 30);
+      var maxWidth = vertical ? w * (brand ? 0.90 : 0.86) : w * (0.46 + squash * 0.06);
+      var maxSize = vertical ? h * 0.115 : h * 0.16;
+      var kickerSize = 0;
+      var fontSize;
+
+      if (brand) {
+        // 先定品牌行字号（占满标题栏），片名再按品牌行的固定比例降档——
+        // 这样无论片名是 6 字还是 12 字，主次关系都不会反转
+        kickerSize = fitTitle(ctx, kickerLines, fontFamily, maxWidth, h * 0.098 * cfg.kickerScale, 30);
+        fontSize = fitTitle(ctx, lines, fontFamily, maxWidth, kickerSize * 0.72 * cfg.titleScale, 30);
+      } else {
+        fontSize = fitTitle(ctx, lines, fontFamily, maxWidth, maxSize * cfg.titleScale, 30);
+      }
+
+      // 品牌优先：品牌行穿主标题样式（亮色+描边+投影），片名降为白色副行、去掉投影
+      var kickerStyle = {
+        font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
+        bar: '', shadow: cfg.shadow, align: vertical ? 'center' : 'left'
+      };
+      var titleStyle = {
+        font: cfg.font, title: brand ? cfg.colors.subtitle : cfg.colors.title,
+        stroke: cfg.colors.stroke, bar: cfg.bar,
+        shadow: brand ? false : cfg.shadow, align: vertical ? 'center' : 'left'
+      };
 
       if (vertical) {
         // 竖版：系列标识顶部 / 标题上半区居中 / 标签中部 / 大数字徽章中下 / 副标题底部
-        if (cfg.kicker) drawKicker(ctx, cfg.kicker, w / 2, h * 0.060, h * 0.026, cfg.colors.subtitle, 'center');
-        drawTitle(ctx, lines, fontSize, w / 2, h * 0.30, {
-          font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
-          bar: cfg.bar, shadow: cfg.shadow, align: 'center'
-        });
-        if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.545, h * 0.030, cfg.colors.tag, cfg.colors.tagText);
+        if (brand) {
+          // 品牌优先：品牌行下移占住原片名重心，片名钩子紧随其下（竖版用得最多，重心宁可偏上）
+          drawTitle(ctx, kickerLines, kickerSize, w / 2, h * 0.215, kickerStyle);
+          drawTitle(ctx, lines, fontSize, w / 2, h * 0.405, titleStyle);
+        } else {
+          if (cfg.kicker) drawKicker(ctx, cfg.kicker, w / 2, h * 0.060, h * 0.026, cfg.colors.subtitle, 'center');
+          drawTitle(ctx, lines, fontSize, w / 2, h * 0.30, titleStyle);
+        }
+        if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.066, cfg.colors.tag, cfg.colors.tagText);
         if (cfg.badge.text) drawBadge(ctx, cfg.badge, w / 2, h * 0.705, h * 0.105, { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w / 2, h * 0.885, h * 0.036, cfg.colors.subtitle, true);
       } else {
         // 横版：标识左上 / 标题左侧 / 标签标题上方 / 大数字徽章右侧 / 副标题标题下方
-        if (cfg.kicker) drawKicker(ctx, cfg.kicker, w * 0.06, h * 0.115, h * 0.026, cfg.colors.subtitle, 'left');
-        drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.46, {
-          font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
-          bar: cfg.bar, shadow: cfg.shadow, align: 'left'
-        });
-        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.030, cfg.colors.tag, cfg.colors.tagText, true);
+        if (brand) {
+          // 品牌优先：左栏四段（标签/品牌/片名/副标题）自上而下匀开，避免下半幅留空
+          drawTitle(ctx, kickerLines, kickerSize, w * 0.06, h * 0.365, kickerStyle);
+          drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.605, titleStyle);
+        } else {
+          if (cfg.kicker) drawKicker(ctx, cfg.kicker, w * 0.06, h * 0.115, h * 0.026, cfg.colors.subtitle, 'left');
+          drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.46, titleStyle);
+        }
+        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.066, cfg.colors.tag, cfg.colors.tagText, true);
         if (cfg.badge.text) drawBadge(ctx, cfg.badge, w * 0.775, h * 0.50, h * 0.115, { font: cfg.font });
-        if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w * 0.06, h * 0.78, h * 0.036, cfg.colors.subtitle, false);
+        if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w * 0.06, h * (brand ? 0.805 : 0.78), h * 0.036, cfg.colors.subtitle, false);
       }
     }
 
