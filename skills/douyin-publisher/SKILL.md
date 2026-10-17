@@ -1,13 +1,13 @@
 ---
 name: douyin-publisher
 description: "抖音成品视频批量发布：把一个系列的成片 mp4 批量上传到抖音创作者平台并逐集填标题话题/定时发布。引导 Agent 用 douyin-publisher CLI（login 扫码 / gen 生成清单 / publish 批量发布，dry-run 默认）完成发布全流程，包括：从分镜脚本提取每集标题话题填清单、首跑校准页面选择器、非交互批处理模式、失败集补跑、风控纪律与合集处理建议。触发词：发布抖音、批量上传、上传抖音、发布视频到抖音、抖音发布清单、douyin publisher、发抖音、系列视频发布"
-version: "1.0.0"
+version: "1.1.0"
 
 author: "CodeBuddy AI"
 
 created: "2026-10-16"
 
-changelog: "1.0.0 首个版本。源自 douyin-publisher 项目（D:/github/douyin-publisher，独立开源仓库）实战立项：调研确认抖音开放平台 OpenAPI 对个人主体不可行（个人仅限小玩法；2025-08 公告 348 要求企业注册资本≥50万+注册满1年），故走创作者中心网页端 + Playwright 浏览器自动化路线。为配合 Agent 批处理，工具已加 --non-interactive 模式。本 skill 是『项目给人用、skill 给 Agent 用』配对模式的第一个实例：工具本体在独立仓库（单一事实源），本 skill 只沉淀 Agent 视角的工作流与坑。"
+changelog: "1.0.0 首个版本。源自 douyin-publisher 项目（D:/github/douyin-publisher，独立开源仓库）实战立项：调研确认抖音开放平台 OpenAPI 对个人主体不可行（个人仅限小玩法；2025-08 公告 348 要求企业注册资本≥50万+注册满1年），故走创作者中心网页端 + Playwright 浏览器自动化路线。为配合 Agent 批处理，工具已加 --non-interactive 模式。1.1.0（2026-10-18）对齐工具 v0.3 实战（Ep07 首跑 + Ep08-10 定时发布）：登录改持久化 Chrome 档案（storage_state 被抖音判新设备 20 分钟失效，已弃用）；封面已自动化（cover 竖版阻断/cover_h 横版仅警告）；manifest 新增 collection/aigc；新增 --at/--now 统一定时；发布按钮须 button:text-is 精确匹配；坑表补定时规则与 keepalive。"
 ---
 
 # 抖音成品视频批量发布（douyin-publisher）
@@ -16,16 +16,17 @@ changelog: "1.0.0 首个版本。源自 douyin-publisher 项目（D:/github/douy
 
 ## 概述
 
-- **工具本体**：`D:\github\douyin-publisher`（独立 git 仓库，开源项目，给人用：README 完整文档）。
+- **工具本体**：`D:\github\douyin-publisher`（独立 git 仓库，开源项目）。**定位是 Agent-first 管线，不做 GUI**（2026-10-18 定位决策）：工具本质是浏览器自动化，"界面"就是发布页本身；人的参与收敛为扫码一次、审清单、批批次三个触点。
 - **本 skill**：Agent 视角的调用手册。工具改版改仓库，工作流经验沉淀在这里。
-- **原理**：Playwright 驱动本机 Chrome 操作 creator.douyin.com 发布页。**官方 OpenAPI 对个人主体不可行**（详见工具仓库 docs/openapi-research.md），别再往 API 路线上浪费时间。
+- **原理**：Playwright 驱动本机 Chrome（launch_persistent_context 持久化档案）操作 creator.douyin.com 发布页。**官方 OpenAPI 对个人主体不可行**（详见工具仓库 docs/openapi-research.md），别再往 API 路线上浪费时间。
 
 ## 前置条件（每次会话先检查）
 
 1. **CLI 可用**：`douyin-publisher --version`。不可用则
    `"C:/Users/yangck/.workbuddy/binaries/python/envs/default/Scripts/pip.exe" install -e D:/github/douyin-publisher`。
-2. **登录态存在**：`~/.douyin_publisher/state.json`。不存在 → 提醒用户回家/在场，跑
+2. **登录档案存在**：`~/.douyin_publisher/chrome-profile/`（持久化 Chrome 档案）。不存在 → 提醒用户在场，跑
    `douyin-publisher login` 后**用户用手机扫码**（Agent 无法代扫，这一步必须等用户）。
+   ⚠️ 已弃用 storage_state 方案：cookie 在新临时 profile 恢复会被抖音判"新设备"踢下线（实测 20 分钟内失效），持久档案扫一次长期复用。
 3. **登录态失效**（publish 时报跳转登录页）→ 重跑 `login`。
 
 ## 工作流
@@ -41,11 +42,12 @@ changelog: "1.0.0 首个版本。源自 douyin-publisher 项目（D:/github/douy
 douyin-publisher gen "<系列目录>" -o <系列目录>/发布清单.json
 ```
 
-生成后**Agent 主动填 text**（这是 Agent 比 CLI 强的地方，也是用户最省事的环节）：
-- 标题来源优先级：该集 `分镜脚本-Opus5.5版.md` 的钩子文案 / `变更记录.md` 的集名与一句话主旨 / 集目录名。
-- 话题：从系列已有发布惯例取（如 #人生攻略 类），2~4 个，不堆砌。
+生成后**Agent 主动填 text 与各字段**（这是 Agent 比 CLI 强的地方，也是用户最省事的环节）：
+- `text` 格式：第一行=作品标题，中间=正文若干行，末尾=话题。标题来源优先级：该集 `分镜脚本-Opus5.5版.md` 的钩子文案 / `变更记录.md` 的集名与一句话主旨 / 集目录名。
+- `cover`（竖版 3:4，设置失败会**中止发布**）与 `cover_h`（横版 4:3，失败仅警告不阻断）：直接填每集交付的封面路径。
+- `collection`：合集名按「包含」匹配，须为**已存在**的合集（找不到会打印候选）；`aigc: true` 勾「内容由 AI 生成」（AI 生成内容按平台要求应声明）。
+- `publish_at` 留空=立即；或批量跑时用 `--at 'YYYY-MM-DD HH:MM'` / `--now` 统一覆盖清单。
 - 填完把完整清单展示给用户过目一遍再进第 3 步。
-- `publish_at` 留空=立即；用户要错峰就按集序填 `YYYY-MM-DD HH:MM`。
 
 ### 第 3 步：dry-run 校准（首跑或抖音改版后必做）
 
@@ -76,8 +78,8 @@ douyin-publisher publish <清单> --execute --non-interactive
 ### 第 5 步：验收与收尾
 
 - 看输出末尾"结果汇总"；失败/未知集用 `--only <序号>` 补跑。
-- 提醒用户（或代操作）：发布页默认自动取帧当封面，对封面有要求的一集在 App 里手动换；合集在创作者中心「合集管理」**批量勾选**已发布视频加入（单次约 50 条上限），之后新视频发布时勾"添加到合集"。
-- 登录态等同账号 cookie，绝不写进任何入库文件、不外传。
+- 成功判据：页面跳转进入 content/post/video 或出现「发布成功」；发布后在 App 里抽查封面/合集/声明是否符合预期。
+- 登录档案等同账号凭证，绝不写进任何入库文件、不外传。
 
 ## 坑表
 
@@ -87,9 +89,12 @@ douyin-publisher publish <清单> --execute --non-interactive
 | Agent 跑 publish 卡住不动 | 用了交互模式，`input()` 在等回车——批处理必须 `--non-interactive` |
 | 选择器突然全失效 | 抖音改版了，回第 3 步校准，改 config.py 后 commit |
 | 带水印/logo 的片源 | 大概率降权/下架，发布前提醒用户 |
-| 封面自动化 | v0.1 未实现（封面编辑器是复杂弹层），manifest 的 cover 字段仅提示；Roadmap v0.2 |
+| 发布按钮点错位置 | 必须精确匹配 `button:text-is('发布')`；宽匹配会命中左侧导航「作品发布」，表现为「暂存」假成功 |
+| 定时时间填不上 | 定时单选要点 label 本身（内部 span 被拦）；填完必须校验 input_value；日期浮层要 Escape 关掉否则挡发布按钮 |
+| 定时规则 | 平台要求至少 2 小时后、14 天内；同一时间可排多条（实测 3 条同排成功） |
+| 批量中途 Chrome 退出 | 持久化 context 里关掉最后一个页面会杀 Chrome——工具已内置空白页 keepalive，别删 |
 | 用户语音输入 | "发布清单"可能被识别成别的词，涉及发布操作一律先复述清单内容再执行 |
 
 ## 配对模式（本 skill 确立的惯例）
 
-**项目给人用（CLI + README + License），skill 给 Agent 用（触发词 + 工作流 + 坑表）**——同一工具两份界面，单一事实源在项目仓库。今后新工具（如抖音封面批量、其他平台发布）立项时默认按此双轨沉淀：项目独立建仓库，skill 进 vibe-video-skills 合集并 junction 进 `.workbuddy/skills/`。
+**项目给人用（CLI + README + License），skill 给 Agent 用（触发词 + 工作流 + 坑表）**——同一工具两份沉淀，当前内容差异不大，分开是习惯性占位，意义在后期开发侧重点分化：skill 线为 Agent 越磨越深，项目线为人演化形态。**但形态按工具性质定，不默认加 GUI**：浏览器自动化类工具的界面就是被驱动的网页本身，Agent-first 是它的终态（2026-10-18 定位决策）。今后新工具立项默认按此双轨沉淀：项目独立建仓库，skill 进 vibe-video-skills 合集并 junction 进 `.workbuddy/skills/`。
