@@ -91,13 +91,26 @@ function loadPlaywright() {
   process.exit(1);
 }
 
-/* ---------- 参数 → 配置 ---------- */
+/* ---------- 参数 → 配置 ----------
+ * 优先级：CLI 显式参数 > --config 文件值 > 内置默认值。
+ * 默认值必须从 --config 文件里取，否则 CLI 的默认值会把文件里的
+ * colors / bg / badge / tagScale 全吃掉（历史 bug，2026-10-18 修）。
+ */
 function buildConfig() {
-  const ratio = arg('--ratio', '3:4');
-  const sizeArg = arg('--size', '');
+  const cfgFile = arg('--config', '');
+  const base = cfgFile ? JSON.parse(fs.readFileSync(cfgFile, 'utf8')) : {};
+  const baseBg = base.bg || {};
+  const baseColors = base.colors || {};
+  const baseBadge = base.badge || {};
+  const d = (v, fallback) => (v === undefined || v === null ? fallback : v);
+
+  const ratio = arg('--ratio', d(base.ratio, '3:4'));
+  const sizeRaw = arg('--size', '');
+  const fileSize = Array.isArray(base.size) ? base.size.join('x') : base.size;
+  const sizeArg = sizeRaw || fileSize || '';
   let size = null;
   if (sizeArg) {
-    const m = sizeArg.toLowerCase().split('x');
+    const m = String(sizeArg).toLowerCase().split('x');
     if (m.length !== 2 || isNaN(+m[0]) || isNaN(+m[1])) {
       console.error('--size 格式应为 WxH，如 1080x1920');
       process.exit(1);
@@ -105,56 +118,50 @@ function buildConfig() {
     size = [+m[0], +m[1]];
   }
 
-  const bgPath = arg('--bg', '');
-  const cfg = {
-    title: arg('--title', ''),
-    subtitle: arg('--subtitle', ''),
-    tag: arg('--tag', ''),
-    tagScale: parseFloat(arg('--tag-scale', '1')),
-    kicker: arg('--kicker', ''),
+  const cliBg = arg('--bg', '');
+  const darken = parseFloat(arg('--darken', String(d(baseBg.darken, 0.25))));
+  let bg;
+  if (cliBg) {
+    bg = { type: 'image', src: pathToFileURL(path.resolve(cliBg)).href, darken, scrim: !hasFlag('--no-scrim') };
+  } else if (baseBg.type === 'image' && baseBg.src) {
+    bg = { type: 'image', src: baseBg.src, darken, scrim: hasFlag('--no-scrim') ? false : baseBg.scrim !== false };
+  } else {
+    bg = { type: 'gradient', style: arg('--style', d(baseBg.style, 'grid')) };
+  }
+
+  return {
+    title: arg('--title', d(base.title, '')),
+    subtitle: arg('--subtitle', d(base.subtitle, '')),
+    tag: arg('--tag', d(base.tag, '')),
+    tagScale: parseFloat(arg('--tag-scale', String(d(base.tagScale, 1)))),
+    kicker: arg('--kicker', d(base.kicker, '')),
     badge: {
-      text: arg('--badge', ''),
-      caption: arg('--badge-caption', ''),
-      color: arg('--badge-color', '#FF3B30'),
-      textColor: arg('--badge-text-color', '#FFFFFF'),
-      captionColor: arg('--badge-caption-color', '')
+      text: arg('--badge', d(baseBadge.text, '')),
+      caption: arg('--badge-caption', d(baseBadge.caption, '')),
+      color: arg('--badge-color', d(baseBadge.color, '#FF3B30')),
+      textColor: arg('--badge-text-color', d(baseBadge.textColor, '#FFFFFF')),
+      captionColor: arg('--badge-caption-color', d(baseBadge.captionColor, '')),
+      y: parseFloat(arg('--badge-y', String(d(baseBadge.y, 0)))),
+      scale: parseFloat(arg('--badge-scale', String(d(baseBadge.scale, 1))))
     },
     ratio,
     size,
-    layout: arg('--layout', 'title'),
-    kickerScale: parseFloat(arg('--kicker-scale', '1')),
-    titleScale: parseFloat(arg('--title-scale', '1')),
-    bg: bgPath
-      ? { type: 'image', src: pathToFileURL(path.resolve(bgPath)).href, darken: parseFloat(arg('--darken', '0.25')), scrim: !hasFlag('--no-scrim') }
-      : { type: 'gradient', style: arg('--style', 'grid') },
+    layout: arg('--layout', d(base.layout, 'title')),
+    kickerScale: parseFloat(arg('--kicker-scale', String(d(base.kickerScale, 1)))),
+    titleScale: parseFloat(arg('--title-scale', String(d(base.titleScale, 1)))),
+    bg,
     colors: {
-      title: arg('--title-color', '#FFD400'),
-      stroke: arg('--stroke-color', '#141414'),
-      subtitle: arg('--subtitle-color', '#FFFFFF'),
-      tag: arg('--tag-color', '#FF3B30'),
-      tagText: arg('--tag-text-color', '#FFFFFF')
+      title: arg('--title-color', d(baseColors.title, '#FFD400')),
+      stroke: arg('--stroke-color', d(baseColors.stroke, '#141414')),
+      subtitle: arg('--subtitle-color', d(baseColors.subtitle, '#FFFFFF')),
+      tag: arg('--tag-color', d(baseColors.tag, '#FF3B30')),
+      tagText: arg('--tag-text-color', d(baseColors.tagText, '#FFFFFF'))
     },
-    bar: arg('--bar-color', ''),
-    shadow: !hasFlag('--no-shadow'),
-    font: arg('--font', '')
+    bar: arg('--bar-color', d(base.bar, '')),
+    fx: arg('--fx', d(base.fx, '')),
+    shadow: hasFlag('--no-shadow') ? false : d(base.shadow, true),
+    font: arg('--font', d(base.font, ''))
   };
-
-  // --config 文件合并（CLI 参数优先）
-  const cfgFile = arg('--config', '');
-  if (cfgFile) {
-    const fromFile = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
-    const merged = Object.assign({}, fromFile, cfg, {
-      bg: Object.assign({}, fromFile.bg, cfg.bg),
-      colors: Object.assign({}, fromFile.colors, cfg.colors),
-      badge: Object.assign({}, fromFile.badge, cfg.badge)
-    });
-    // CLI 未显式传的字段回退为文件值
-    for (const k of ['title', 'subtitle', 'tag', 'kicker', 'ratio', 'size', 'layout', 'kickerScale', 'titleScale', 'bar', 'shadow', 'font']) {
-      if (!process.argv.includes('--' + k.replace(/([A-Z])/g, '-$1').toLowerCase()) && fromFile[k] !== undefined) merged[k] = fromFile[k];
-    }
-    return merged;
-  }
-  return cfg;
 }
 
 (async () => {

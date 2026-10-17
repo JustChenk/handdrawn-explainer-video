@@ -259,6 +259,19 @@
       ctx.fill();
     }
 
+    // 暖色外发光层：画在描边之下，给纯色标题一点灯箱质感
+    if (opts.glow && !opts.bar) {
+      ctx.save();
+      ctx.shadowColor = opts.glow;
+      ctx.shadowBlur = size * 0.40;
+      ctx.fillStyle = opts.title;
+      for (var k = 0; k < lines.length; k++) {
+        ctx.fillText(lines[k], x, top + k * lh + size / 2);
+        ctx.fillText(lines[k], x, top + k * lh + size / 2);
+      }
+      ctx.restore();
+    }
+
     for (var j = 0; j < lines.length; j++) {
       var ly = top + j * lh + size / 2;
       if (opts.bar) {
@@ -279,7 +292,14 @@
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         ctx.shadowOffsetY = 0;
-        ctx.fillStyle = opts.title;
+        if (opts.gradient) {
+          var tg = ctx.createLinearGradient(0, top, 0, top + totalH);
+          tg.addColorStop(0, opts.gradient[0]);
+          tg.addColorStop(1, opts.gradient[1]);
+          ctx.fillStyle = tg;
+        } else {
+          ctx.fillStyle = opts.title;
+        }
         ctx.fillText(lines[j], x, ly);
       }
     }
@@ -346,9 +366,26 @@
     ctx.shadowBlur = size * 0.32;
     ctx.shadowOffsetY = size * 0.09;
     roundRect(ctx, bx, by, boxW, boxH, rad);
-    ctx.fillStyle = b.color;
+    if (b.gradient) {
+      var bgr = ctx.createLinearGradient(0, by, 0, by + boxH);
+      bgr.addColorStop(0, b.gradient[0]);
+      bgr.addColorStop(1, b.gradient[1]);
+      ctx.fillStyle = bgr;
+    } else {
+      ctx.fillStyle = b.color;
+    }
     ctx.fill();
     ctx.restore();
+
+    /* 顶部内高光：让色块从平面变成有厚度的实体 */
+    if (b.gradient) {
+      var hl = ctx.createLinearGradient(0, by, 0, by + boxH * 0.45);
+      hl.addColorStop(0, 'rgba(255,255,255,0.22)');
+      hl.addColorStop(1, 'rgba(255,255,255,0)');
+      roundRect(ctx, bx, by, boxW, boxH, rad);
+      ctx.fillStyle = hl;
+      ctx.fill();
+    }
 
     /* 深色描边：保证压在任何背景上都立得住 */
     ctx.lineJoin = 'round';
@@ -379,7 +416,7 @@
       tag: (config && config.tag) || '',
       kicker: (config && config.kicker) || '',
       badge: Object.assign(
-        { text: '', caption: '', color: '#FF3B30', textColor: '#FFFFFF', captionColor: '', stroke: '' },
+        { text: '', caption: '', color: '#FF3B30', textColor: '#FFFFFF', captionColor: '', stroke: '', y: 0, scale: 1 },
         (config && config.badge) || {}
       ),
       ratio: (config && config.ratio) || '3:4',
@@ -392,6 +429,7 @@
       colors: Object.assign({ title: '#FFD400', stroke: '#141414', subtitle: '#FFFFFF', tag: '#FF3B30', tagText: '#FFFFFF' }, config && config.colors),
       bar: (config && config.bar) || '',
       shadow: config && config.shadow === undefined ? true : config.shadow,
+      fx: (config && config.fx) || '',
       font: (config && config.font) || ''
     };
 
@@ -438,16 +476,36 @@
         fontSize = fitTitle(ctx, lines, fontFamily, maxWidth, maxSize * cfg.titleScale, 30);
       }
 
+      /* 质感预设（可选）：只影响标题/徽章的材质，不改变构图与配色口径 */
+      var FX_PRESETS = {
+        gold: {
+          title: ['#FFE45C', '#FFC400'],
+          glow: 'rgba(255,170,0,0.40)',
+          badge: ['#FF6242', '#D31100']
+        },
+        red: {
+          title: null,
+          glow: '',
+          badge: ['#FF6242', '#D31100']
+        }
+      };
+      var FX = FX_PRESETS[cfg.fx] || null;
+
       // 品牌优先：品牌行穿主标题样式（亮色+描边+投影），片名降为白色副行、去掉投影
       var kickerStyle = {
         font: cfg.font, title: cfg.colors.title, stroke: cfg.colors.stroke,
-        bar: '', shadow: cfg.shadow, align: vertical ? 'center' : 'left'
+        bar: '', shadow: cfg.shadow, align: vertical ? 'center' : 'left',
+        gradient: FX ? FX.title : null, glow: FX ? FX.glow : ''
       };
       var titleStyle = {
         font: cfg.font, title: brand ? cfg.colors.subtitle : cfg.colors.title,
         stroke: cfg.colors.stroke, bar: cfg.bar,
-        shadow: brand ? false : cfg.shadow, align: vertical ? 'center' : 'left'
+        shadow: brand ? false : cfg.shadow, align: vertical ? 'center' : 'left',
+        gradient: brand || !FX ? null : FX.title, glow: brand || !FX ? '' : FX.glow
       };
+      var badgeCfg = FX
+        ? Object.assign({}, cfg.badge, { gradient: FX.badge })
+        : cfg.badge;
 
       if (vertical) {
         // 竖版：系列标识顶部 / 标题上半区居中 / 标签中部 / 大数字徽章中下 / 副标题底部
@@ -460,7 +518,7 @@
           drawTitle(ctx, lines, fontSize, w / 2, h * 0.30, titleStyle);
         }
         if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.545, h * 0.066 * cfg.tagScale, cfg.colors.tag, cfg.colors.tagText);
-        if (cfg.badge.text) drawBadge(ctx, cfg.badge, w / 2, h * 0.705, h * 0.105, { font: cfg.font });
+        if (cfg.badge.text) drawBadge(ctx, badgeCfg, w / 2, h * (cfg.badge.y || 0.705), h * 0.105 * (cfg.badge.scale || 1), { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w / 2, h * 0.885, h * 0.036, cfg.colors.subtitle, true);
       } else {
         // 横版：标识左上 / 标题左侧 / 标签标题上方 / 大数字徽章右侧 / 副标题标题下方
@@ -473,7 +531,7 @@
           drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.46, titleStyle);
         }
         if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.066 * cfg.tagScale, cfg.colors.tag, cfg.colors.tagText, true);
-        if (cfg.badge.text) drawBadge(ctx, cfg.badge, w * 0.775, h * 0.50, h * 0.115, { font: cfg.font });
+        if (cfg.badge.text) drawBadge(ctx, badgeCfg, w * (cfg.badge.x || 0.775), h * (cfg.badge.y || 0.50), h * 0.115 * (cfg.badge.scale || 1), { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w * 0.06, h * (brand ? 0.805 : 0.78), h * 0.036, cfg.colors.subtitle, false);
       }
     }
