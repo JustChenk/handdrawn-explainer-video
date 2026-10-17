@@ -459,7 +459,7 @@
           if (cfg.kicker) drawKicker(ctx, cfg.kicker, w / 2, h * 0.060, h * 0.026, cfg.colors.subtitle, 'center');
           drawTitle(ctx, lines, fontSize, w / 2, h * 0.30, titleStyle);
         }
-        if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.066, cfg.colors.tag, cfg.colors.tagText);
+        if (cfg.tag) drawTag(ctx, cfg.tag, w / 2, h * 0.545, h * 0.066 * cfg.tagScale, cfg.colors.tag, cfg.colors.tagText);
         if (cfg.badge.text) drawBadge(ctx, cfg.badge, w / 2, h * 0.705, h * 0.105, { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w / 2, h * 0.885, h * 0.036, cfg.colors.subtitle, true);
       } else {
@@ -472,7 +472,7 @@
           if (cfg.kicker) drawKicker(ctx, cfg.kicker, w * 0.06, h * 0.115, h * 0.026, cfg.colors.subtitle, 'left');
           drawTitle(ctx, lines, fontSize, w * 0.06, h * 0.46, titleStyle);
         }
-        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.066, cfg.colors.tag, cfg.colors.tagText, true);
+        if (cfg.tag) drawTag(ctx, cfg.tag, w * 0.06, h * 0.225, h * 0.066 * cfg.tagScale, cfg.colors.tag, cfg.colors.tagText, true);
         if (cfg.badge.text) drawBadge(ctx, cfg.badge, w * 0.775, h * 0.50, h * 0.115, { font: cfg.font });
         if (cfg.subtitle) drawSubtitle(ctx, cfg.subtitle, w * 0.06, h * (brand ? 0.805 : 0.78), h * 0.036, cfg.colors.subtitle, false);
       }

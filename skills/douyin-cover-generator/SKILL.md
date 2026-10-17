@@ -198,7 +198,7 @@ node scripts/render-cover.js --title "687条建议\n只算四笔账" --subtitle 
 | `--tag` | 强调标签（4-6 字，圆角色块）。**默认字号 = 画布高度 6.6%**（2026-10-17 由 3.0% 上调，用户要求「红色部分要跟最大字体一样抢眼」）——已与主标题的实际渲染字号持平（主标题超 6 字会被 `fitTitle` 按宽度收缩，tag 4-6 字不缩，所以视觉重量相当、主次仍分明）。`--tag-scale` 可在此基准上再调 |
 | `--kicker` | 系列/栏目标识（竖版顶部居中 / 横版左上角），用于建立系列认知，如「人生高性价比指南」。默认是小字；配 `--layout brand` 时它升为封面主角 |
 | `--layout` | `title`（**默认**）= 片名是主角，kicker 只是小字标识；`brand` = **系列标识是主角**，kicker 拿大字（主色+描边+投影）、片名自动降一档为白色副行。`brand` 必须同时给 `--kicker` |
-| `--kicker-scale` `--title-scale` `--tag-scale` | 字号倍率（`--tag-scale` **默认 2.2**，只接受正数，非法值回退 1）。给 `--layout brand` 微调用：`--kicker-scale 1.05` 再把品牌行放大一点，`--title-scale 0.9` 再把片名压一点。别用改文案的方式去凑字号。**⚠️ 注意 `--tag-scale` 是乘在 3.0% 基准上的**：默认 2.2 → 6.6%；若要回到旧的小标签规格传 `--tag-scale 1` |
+| `--kicker-scale` `--title-scale` `--tag-scale` | 字号倍率（`--tag-scale` **默认 1**，只接受正数，非法值回退 1）。给 `--layout brand` 微调用：`--kicker-scale 1.05` 再把品牌行放大一点，`--title-scale 0.9` 再把片名压一点。别用改文案的方式去凑字号。**⚠️ `--tag-scale` 是乘在 6.6% 基准上的**（2026-10-17 定稿值）：默认 1 = 6.6%；要更抢眼传 `--tag-scale 1.3`，要回到旧的小标签规格传 `--tag-scale 0.45`（≈3.0%） |
 | `--badge` `--badge-caption` | **大数字徽章**：一个数字/短词 + 可选小字说明，是全图视觉锤（如 `--badge 34 --badge-caption 集全系列`）。竖版在中下部居中、横版在右侧中部；短标题 + 大数字徽章是本 skill 点击率最高的组合 |
 | `--badge-color` `--badge-text-color` `--badge-caption-color` | 徽章配色（默认红底白字 `#FF3B30` / `#FFFFFF`；`--badge-caption-color` 缺省随 `--badge-text-color`） |
 | `--ratio` | 画布比例：`3:4`（**默认**，竖版 1080×1440）/ `4:3`（横版 1920×1440）/ `9:16`（1080×1920）/ `16:9`（1920×1080）/ `1:1`（1080×1080） |

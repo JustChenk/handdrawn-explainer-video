@@ -110,7 +110,7 @@ function buildConfig() {
     title: arg('--title', ''),
     subtitle: arg('--subtitle', ''),
     tag: arg('--tag', ''),
-    tagScale: parseFloat(arg('--tag-scale', '2.2')),
+    tagScale: parseFloat(arg('--tag-scale', '1')),
     kicker: arg('--kicker', ''),
     badge: {
       text: arg('--badge', ''),
